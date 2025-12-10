@@ -8,3 +8,174 @@ datasource db {
     provider = "postgresql"
     url      = env("DATABASE_URL")
 }
+
+// Enums
+
+enum RecordingState {
+    NotRecorded
+    InProgress
+    AwaitingProcessing
+    Processed
+    Failed
+}
+
+enum AttendanceState {
+    Idle
+    Monitoring
+    Completed
+}
+
+enum MemberStatus {
+    New
+    Active
+    Inactive
+}
+
+enum GithubActivityType {
+    Commit
+    PullRequest
+    Issue
+    Review
+    Other
+}
+
+// Models
+
+model Member {
+    id           Int     @id @default(autoincrement())
+    firstName    String?
+    lastName     String?
+    email        String? @unique
+    phone        String?
+    studentIndex String?
+    faculty      String?
+    fieldOfStudy String?
+    studyYear    String?
+
+    currentSection   String?
+    currentRole      String?
+    currentProjects  String?
+    otherProjects    String?
+    otherExperiences String?
+    status           MemberStatus @default(New)
+
+    discordId      String  @unique
+    messengerUrl   String?
+    githubUsername String?
+    githubUrl      String?
+    githubId       String? @unique
+
+    joinedAt  DateTime
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    meetings        Meeting[]
+    discordActivity DiscordActivity[]
+    githubActivity  GithubActivity[]
+
+    @@index([discordId])
+    @@index([githubId])
+}
+
+model Meeting {
+    id               Int     @id @default(autoincrement())
+    name             String?
+    discordChannelId String?
+
+    attendanceStatus AttendanceState @default(Idle)
+    recordingStatus  RecordingState?
+
+    fullTranscription String? @db.Text
+
+    driveFolderId     String?
+    isUploadedToDrive Boolean   @default(false)
+    uploadCompletedAt DateTime?
+
+    finishedAt DateTime?
+    createdAt  DateTime  @default(now())
+    updatedAt  DateTime  @updatedAt
+
+    attendees           Member[]
+    transcriptionChunks TranscriptionChunk[]
+}
+
+model TranscriptionChunk {
+    id               Int    @id @default(autoincrement())
+    speakerDiscordId String
+    startTime        Float
+    duration         Float
+    text             String @db.Text
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    meetingId Int
+    meeting   Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+    @@index([meetingId])
+}
+
+model DiscordActivity {
+    id           Int      @id @default(autoincrement())
+    messageCount Int
+    date         DateTime @db.Date
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    memberId Int
+    member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+    @@index([memberId])
+    @@index([date])
+}
+
+model GithubActivity {
+    id       Int                @id @default(autoincrement())
+    githubId String?
+    type     GithubActivityType
+    repo     String
+    message  String?
+    date     DateTime
+
+    externalId String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    member Member? @relation(fields: [githubId], references: [githubId], onDelete: Cascade)
+
+    @@index([date])
+}
+
+model ChannelActivity {
+    id           Int      @id @default(autoincrement())
+    channelId    String
+    messageCount Int
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+
+    @@index([channelId])
+}
+
+model OfficeStatusSnapshot {
+    id        Int    @id @default(autoincrement())
+    channelId String
+    messageId String
+
+    currentPersonCount     Int?
+    lastPresenceDetectedAt DateTime?
+    lastMessageUpdatedAt   DateTime?
+    imagePath              String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model CameraDowntimeAlert {
+    id                Int       @id @default(autoincrement())
+    discordUserId     String
+    lastMessageSentAt DateTime?
+    createdAt         DateTime  @default(now())
+    updatedAt         DateTime  @updatedAt
+}
