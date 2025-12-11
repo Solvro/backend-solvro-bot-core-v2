@@ -31,7 +31,6 @@ import { MeetingsModule } from './discord/meetings/meetings.module';
             inject: [ConfigService],
         }),
         RecordingsModule,
-        DatabaseModule,
         MeetingsModule
     ],
     controllers: [AppController],
