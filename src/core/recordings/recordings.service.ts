@@ -9,7 +9,7 @@ export class RecordingsService {
     constructor(private database: DatabaseService) {}
     
     async updateMeeting(id: number, updateMeetingDTO: UpdateMeetingDTO) {
-        const existingMeeting = await this.database.meeting.findUnique({ where: { id } });
+        const existingMeeting = await this.database.meeting.findUnique({ where: { id: +id } });
 
         if (!existingMeeting) throw new NotFoundException('Meeting not found');
 
