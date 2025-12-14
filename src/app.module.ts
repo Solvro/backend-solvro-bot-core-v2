@@ -8,6 +8,7 @@ import { IntentsBitField } from 'discord.js';
 import { RecordingsModule } from './core/recordings/recordings.module';
 import { DatabaseModule } from './database/database.module';
 import { MeetingsModule } from './discord/meetings/meetings.module';
+import { GoogleModule } from './google/google.module';
 
 @Module({
     imports: [
@@ -20,6 +21,11 @@ import { MeetingsModule } from './discord/meetings/meetings.module';
                 PORT: Joi.number().default(3000),
                 DISCORD_TOKEN: Joi.string().required(),
                 DISCORD_DEVELOPMENT_GUILD_ID: Joi.string().allow('', null),
+                GOOGLE_CLIENT_ID: Joi.string().required(),
+                GOOGLE_CLIENT_SECRET: Joi.string().required(),
+                GOOGLE_REDIRECT_URI: Joi.string().required(),
+                GOOGLE_REFRESH_TOKEN: Joi.string().allow('', null),
+                GOOGLE_DRIVE_FOLDER_ID: Joi.string().required(),
             }),
         }),
         NecordModule.forRootAsync({
@@ -31,7 +37,8 @@ import { MeetingsModule } from './discord/meetings/meetings.module';
             inject: [ConfigService],
         }),
         RecordingsModule,
-        MeetingsModule
+        MeetingsModule,
+        GoogleModule
     ],
     controllers: [AppController],
     providers: [AppService],
