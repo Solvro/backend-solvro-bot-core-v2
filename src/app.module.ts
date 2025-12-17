@@ -9,6 +9,7 @@ import { RecordingsModule } from './core/recordings/recordings.module';
 import { DatabaseModule } from './database/database.module';
 import { MeetingsModule } from './discord/meetings/meetings.module';
 import { GoogleModule } from './google/google.module';
+import { DatabaseService } from './database/database.service';
 
 @Module({
     imports: [
@@ -42,6 +43,6 @@ import { GoogleModule } from './google/google.module';
         GoogleModule
     ],
     controllers: [AppController],
-    providers: [AppService],
+    providers: [AppService, DatabaseService],
 })
 export class AppModule { }
