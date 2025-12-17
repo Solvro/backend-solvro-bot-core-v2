@@ -26,6 +26,7 @@ import { GoogleModule } from './google/google.module';
                 GOOGLE_REDIRECT_URI: Joi.string().required(),
                 GOOGLE_REFRESH_TOKEN: Joi.string().allow('', null),
                 GOOGLE_DRIVE_FOLDER_ID: Joi.string().required(),
+                TRANSCRIBER_URL: Joi.string().uri().required(),
             }),
         }),
         NecordModule.forRootAsync({
