@@ -33,7 +33,7 @@ import { DatabaseService } from './database/database.service';
         NecordModule.forRootAsync({
             useFactory: (configService) => ({
                 token: configService.get('DISCORD_TOKEN'),
-                intents: [IntentsBitField.Flags.Guilds, IntentsBitField.Flags.GuildMessages, IntentsBitField.Flags.GuildMembers],
+                intents: [IntentsBitField.Flags.Guilds, IntentsBitField.Flags.GuildMessages, IntentsBitField.Flags.GuildMembers, IntentsBitField.Flags.GuildVoiceStates],
                 development: [configService.get('DISCORD_DEVELOPMENT_GUILD_ID')]
             }),
             inject: [ConfigService],

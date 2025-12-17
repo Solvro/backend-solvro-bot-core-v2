@@ -9,27 +9,35 @@ export class MeetingsService {
     constructor(private database: DatabaseService, private configService: ConfigService) { }
 
     private async startTranscriber(channelId: string, meetingId: number, meetingName: string) {
-        // send request to transcriber service to start recording
-        const transcriberUrl = this.configService.get<string>('TRANSCRIBER_URL');
-        const response = await fetch(`${transcriberUrl}/start`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                channelId,
-                meetingId,
-                meetingName,
-            }),
-        });
-        return response.ok;
+        try {
+            // send request to transcriber service to start recording
+            const transcriberUrl = this.configService.get<string>('TRANSCRIBER_URL');
+            const response = await fetch(`${transcriberUrl}/start`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    channelId,
+                    meetingId,
+                    meetingName,
+                }),
+            });
+            return response.ok;
+        } catch (error) {
+            return false;
+        }
     }
 
     private async stopTranscriber() {
-        // send request to transcriber service to stop recording
-        const transcriberUrl = this.configService.get<string>('TRANSCRIBER_URL');
-        const response = await fetch(`${transcriberUrl}/stop`, {
-            method: 'POST',
-        });
-        return response.ok;
+        try {
+            // send request to transcriber service to stop recording
+            const transcriberUrl = this.configService.get<string>('TRANSCRIBER_URL');
+            const response = await fetch(`${transcriberUrl}/stop`, {
+                method: 'POST',
+            });
+            return response.ok;
+        } catch (error) {
+            return false;
+        }
     }
 
     private async startAttendanceMonitoring(meetingId: number, channel: VoiceBasedChannel) {

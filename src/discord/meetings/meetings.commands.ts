@@ -20,7 +20,7 @@ export class MeetingsCommands {
             enableTranscription: true,
         });
 
-        await interaction.editReply({
+        await interaction.reply({
             content: "✅ Weekly session started successfully:\n- 🎤 Transcription is now active\n- 📋 Attendance tracking is in progress"
         });
     }
