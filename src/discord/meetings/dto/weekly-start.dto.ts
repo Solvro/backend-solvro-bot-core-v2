@@ -1,4 +1,4 @@
-import { ChannelType, GuildChannel } from "discord.js";
+import { ChannelType, VoiceChannel } from "discord.js";
 import { ChannelOption, StringOption } from "necord";
 
 export class WeeklyStartDTO {
@@ -15,5 +15,5 @@ export class WeeklyStartDTO {
         required: true,
         channel_types: [ChannelType.GuildVoice]
     })
-    channelId: GuildChannel;
+    channelId: VoiceChannel;
 }
