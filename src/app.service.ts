@@ -26,7 +26,7 @@ export class AppService {
         this.logger.log('Discord client is ready!');
     }
 
-    @necord.Once('voiceChannelJoin')
+    @necord.On('voiceChannelJoin')
     public async onVoiceChannelJoin(@necord.Context() [member, channel]: necord.ContextOf<'voiceChannelJoin'>) {
         if (member.user.bot) return;
 

@@ -5,6 +5,6 @@ import { DatabaseService } from 'src/database/database.service';
 
 @Module({
   controllers: [RecordingsController],
-  providers: [RecordingsService, DatabaseService]
+  providers: [RecordingsService]
 })
 export class RecordingsModule {}

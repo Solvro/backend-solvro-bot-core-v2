@@ -17,7 +17,7 @@ export class MeetingsService {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     channelId,
-                    meetingId,
+                    meetingId: meetingId.toString(),
                     meetingName,
                 }),
             });

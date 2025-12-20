@@ -4,6 +4,6 @@ import { MeetingsCommands } from './meetings.commands';
 import { DatabaseService } from 'src/database/database.service';
 
 @Module({
-  providers: [MeetingsService, MeetingsCommands, DatabaseService]
+  providers: [MeetingsService, MeetingsCommands]
 })
 export class MeetingsModule {}

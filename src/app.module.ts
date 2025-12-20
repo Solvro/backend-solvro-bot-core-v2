@@ -9,8 +9,6 @@ import { RecordingsModule } from './core/recordings/recordings.module';
 import { DatabaseModule } from './database/database.module';
 import { MeetingsModule } from './discord/meetings/meetings.module';
 import { GoogleModule } from './google/google.module';
-import { DatabaseService } from './database/database.service';
-
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -38,11 +36,12 @@ import { DatabaseService } from './database/database.service';
             }),
             inject: [ConfigService],
         }),
+        DatabaseModule,
         RecordingsModule,
         MeetingsModule,
         GoogleModule
     ],
     controllers: [AppController],
-    providers: [AppService, DatabaseService],
+    providers: [AppService],
 })
 export class AppModule { }
