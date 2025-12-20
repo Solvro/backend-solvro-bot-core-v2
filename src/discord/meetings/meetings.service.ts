@@ -102,8 +102,8 @@ export class MeetingsService {
         return meeting;
     }
 
-    public async stopCurrentMeeting() {
-        const meeting = await this.database.meeting.findFirst({
+    public async getActiveMeeting() {
+        return this.database.meeting.findFirst({
             where: {
                 OR: [
                     { attendanceStatus: AttendanceState.Monitoring },
@@ -111,6 +111,10 @@ export class MeetingsService {
                 ],
             },
         });
+    }
+
+    public async stopCurrentMeeting() {
+        const meeting = await this.getActiveMeeting();
 
         if (!meeting) {
             return;
