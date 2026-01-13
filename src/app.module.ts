@@ -9,6 +9,7 @@ import { RecordingsModule } from './core/recordings/recordings.module';
 import { DatabaseModule } from './database/database.module';
 import { MeetingsModule } from './discord/meetings/meetings.module';
 import { GoogleModule } from './google/google.module';
+import { FilesModule } from './files/files.module';
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -39,7 +40,8 @@ import { GoogleModule } from './google/google.module';
         DatabaseModule,
         RecordingsModule,
         MeetingsModule,
-        GoogleModule
+        GoogleModule,
+        FilesModule
     ],
     controllers: [AppController],
     providers: [AppService],

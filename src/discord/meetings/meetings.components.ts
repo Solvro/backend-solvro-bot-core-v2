@@ -117,7 +117,14 @@ export class MeetingsComponents {
     public async onAttendanceButton(@necord.Context() [interaction]: necord.ButtonContext) {
         await interaction.deferReply({ ephemeral: true });
 
-        const meetings = await this.meetingsService.getPastMeetingsOptions();
+        const meetings = (await this.meetingsService.getMeetingsWithCompletedAttendance())
+            .map(meeting => {
+                return {
+                    label: meeting.name ?? `Meeting #${meeting.id}`,
+                    description: meeting.createdAt.toLocaleDateString(),
+                    value: meeting.id.toString(),
+                };
+            });
 
         if (meetings.length === 0) {
             await interaction.editReply({
@@ -129,7 +136,7 @@ export class MeetingsComponents {
         const row = new ActionRowBuilder<StringSelectMenuBuilder>()
             .addComponents(
                 new StringSelectMenuBuilder()
-                    .setCustomId('SELECT_ATTENDANCE_MEETING_ID')
+                    .setCustomId('ATTENDANCE_SELECT_MEETING_ID')
                     .setPlaceholder('Select a meeting to view attendance')
                     .setMinValues(1)
                     .setMaxValues(1)
@@ -146,5 +153,10 @@ export class MeetingsComponents {
             content: "ℹ️ Summary feature coming soon!",
             ephemeral: true
         });
+    }
+
+    @necord.StringSelect('ATTENDANCE_SELECT_MEETING_ID')
+    public async onAttendanceSelectMeeting(@necord.Context() [interaction]: necord.StringSelectContext) {
+        await interaction.deferReply({ ephemeral: true });
     }
 }

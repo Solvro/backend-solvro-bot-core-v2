@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { VoiceBasedChannel } from 'discord.js';
+import { Meeting } from 'generated/prisma/client';
 import { AttendanceState, RecordingState, MeetingType } from 'generated/prisma/enums';
 import { DatabaseService } from 'src/database/database.service';
 
@@ -10,7 +11,7 @@ export class MeetingsService {
 
     constructor(private database: DatabaseService, private configService: ConfigService) { }
 
-    private async startTranscriber(channelId: string, meetingId: number, meetingName: string) {
+    private async startTranscriber(channelId: string, meetingId: number, meetingName: string): Promise<boolean> {
         try {
             // send request to transcriber service to start recording
             const transcriberUrl = this.configService.get<string>('TRANSCRIBER_URL');
@@ -30,7 +31,7 @@ export class MeetingsService {
         }
     }
 
-    private async stopTranscriber() {
+    private async stopTranscriber(): Promise<boolean> {
         try {
             // send request to transcriber service to stop recording
             const transcriberUrl = this.configService.get<string>('TRANSCRIBER_URL');
@@ -43,7 +44,7 @@ export class MeetingsService {
         }
     }
 
-    private async startAttendanceMonitoring(meetingId: number, channel: VoiceBasedChannel) {
+    private async startAttendanceMonitoring(meetingId: number, channel: VoiceBasedChannel): Promise<void> {
         await this.database.meeting.update({
             where: { id: meetingId },
             data: {
@@ -58,7 +59,7 @@ export class MeetingsService {
         });
     }
 
-    private async stopAttendanceMonitoring(meetingId: number) {
+    private async stopAttendanceMonitoring(meetingId: number): Promise<void> {
         await this.database.meeting.update({
             where: { id: meetingId },
             data: {
@@ -73,7 +74,7 @@ export class MeetingsService {
         meetingType?: MeetingType;
         enableAttendance?: boolean;
         enableTranscription?: boolean;
-    }) {
+    }): Promise<Meeting>{
         const {
             name,
             channel,
@@ -105,7 +106,7 @@ export class MeetingsService {
         return meeting;
     }
 
-    public async getActiveMeeting() {
+    public async getActiveMeeting(): Promise<Meeting | null> {
         return this.database.meeting.findFirst({
             where: {
                 OR: [
@@ -116,7 +117,7 @@ export class MeetingsService {
         });
     }
 
-    public async stopCurrentMeeting() {
+    public async stopCurrentMeeting(): Promise<void> {
         const meeting = await this.getActiveMeeting();
 
         if (!meeting) {
@@ -136,20 +137,14 @@ export class MeetingsService {
         }
     }
 
-    public async getPastMeetingsOptions() {
+    public async getMeetingsWithCompletedAttendance(): Promise<Meeting[]> {
         const meetings = await this.database.meeting.findMany({
             where: {
-                AND: [
-                    { attendanceStatus: AttendanceState.Completed },
-                    { recordingStatus: RecordingState.Processed },
-                ],
+                attendanceStatus: AttendanceState.Completed,
             },
             orderBy: { createdAt: 'desc' },
         });
 
-        return meetings.map(meeting => ({
-            label: (meeting.name || `Meeting #${meeting.id}`) + ` (${meeting.createdAt.toLocaleDateString()})`,
-            value: meeting.id.toString(),
-        }));
+        return meetings;
     }
 }
