@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import * as necord from "necord";
-import { ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
+import { ActionRowBuilder, ModalBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
 import { MeetingsService } from "./meetings.service";
 import { MeetingType } from "generated/prisma/enums";
 import { GuildMember } from "discord.js";
@@ -115,10 +115,29 @@ export class MeetingsComponents {
 
     @necord.Button('BUTTON_ATTENDANCE')
     public async onAttendanceButton(@necord.Context() [interaction]: necord.ButtonContext) {
-        await interaction.reply({
-            content: "ℹ️ Attendance feature coming soon!",
-            ephemeral: true
-        });
+        await interaction.deferReply({ ephemeral: true });
+
+        const meetings = await this.meetingsService.getPastMeetingsOptions();
+
+        if (meetings.length === 0) {
+            await interaction.editReply({
+                content: "❌ No past meetings with attendance data found. Mind that after stopping a meeting, it may take a few moments for the attendance data to be available."
+            });
+            return;
+        }
+
+        const row = new ActionRowBuilder<StringSelectMenuBuilder>()
+            .addComponents(
+                new StringSelectMenuBuilder()
+                    .setCustomId('SELECT_ATTENDANCE_MEETING_ID')
+                    .setPlaceholder('Select a meeting to view attendance')
+                    .setMinValues(1)
+                    .setMaxValues(1)
+                    .addOptions(
+                        ...meetings
+                    )
+            );
+        await interaction.editReply({ components: [row] });
     }
 
     @necord.Button('BUTTON_SUMMARY')

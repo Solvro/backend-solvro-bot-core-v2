@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { VoiceBasedChannel } from 'discord.js';
 import { AttendanceState, RecordingState, MeetingType } from 'generated/prisma/enums';
@@ -6,6 +6,8 @@ import { DatabaseService } from 'src/database/database.service';
 
 @Injectable()
 export class MeetingsService {
+    private readonly logger = new Logger(MeetingsService.name);
+
     constructor(private database: DatabaseService, private configService: ConfigService) { }
 
     private async startTranscriber(channelId: string, meetingId: number, meetingName: string) {
@@ -23,6 +25,7 @@ export class MeetingsService {
             });
             return response.ok;
         } catch (error) {
+            this.logger.error('Failed to start transcriber', error);
             return false;
         }
     }
@@ -131,5 +134,22 @@ export class MeetingsService {
         if (meeting.attendanceStatus === AttendanceState.Monitoring) {
             await this.stopAttendanceMonitoring(meeting.id);
         }
+    }
+
+    public async getPastMeetingsOptions() {
+        const meetings = await this.database.meeting.findMany({
+            where: {
+                AND: [
+                    { attendanceStatus: AttendanceState.Completed },
+                    { recordingStatus: RecordingState.Processed },
+                ],
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+
+        return meetings.map(meeting => ({
+            label: (meeting.name || `Meeting #${meeting.id}`) + ` (${meeting.createdAt.toLocaleDateString()})`,
+            value: meeting.id.toString(),
+        }));
     }
 }
