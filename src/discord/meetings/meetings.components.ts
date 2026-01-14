@@ -4,10 +4,11 @@ import { ActionRowBuilder, ModalBuilder, StringSelectMenuBuilder, TextInputBuild
 import { MeetingsService } from "./meetings.service";
 import { MeetingType } from "generated/prisma/enums";
 import { GuildMember } from "discord.js";
+import { FilesService } from "src/files/files.service";
 
 @Injectable()
 export class MeetingsComponents {
-    constructor(private meetingsService: MeetingsService) { }
+    constructor(private meetingsService: MeetingsService, private filesService: FilesService) { }
 
     @necord.Button('BUTTON_START_WEEKLY')
     public async onStartWeeklyButton(@necord.Context() [interaction]: necord.ButtonContext) {
@@ -158,5 +159,23 @@ export class MeetingsComponents {
     @necord.StringSelect('ATTENDANCE_SELECT_MEETING_ID')
     public async onAttendanceSelectMeeting(@necord.Context() [interaction]: necord.StringSelectContext) {
         await interaction.deferReply({ ephemeral: true });
+
+        const meetingId = parseInt(interaction.values[0], 10);
+        const csvContent = await this.filesService.generateAttendenceFile(meetingId);
+
+        if (!csvContent) {
+            await interaction.editReply({
+                content: "❌ No attendance data found for the selected meeting."
+            });
+            return;
+        }
+
+        await interaction.editReply({
+            content: "📋 Attendance Data (CSV):",
+            files: [{
+                attachment: Buffer.from(csvContent, 'utf-8'),
+                name: `attendance_meeting_${meetingId}.csv`
+            }]
+        });
     }
 }

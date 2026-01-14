@@ -20,7 +20,7 @@ import { FilesModule } from './files/files.module';
                 DATABASE_URL: Joi.string().uri().required(),
                 PORT: Joi.number().default(3000),
                 DISCORD_TOKEN: Joi.string().required(),
-                DISCORD_DEVELOPMENT_GUILD_ID: Joi.string().allow('', null),
+                DISCORD_GUILD_ID: Joi.string().required(),
                 GOOGLE_CLIENT_ID: Joi.string().required(),
                 GOOGLE_CLIENT_SECRET: Joi.string().required(),
                 GOOGLE_REDIRECT_URI: Joi.string().required(),
@@ -33,7 +33,7 @@ import { FilesModule } from './files/files.module';
             useFactory: (configService) => ({
                 token: configService.get('DISCORD_TOKEN'),
                 intents: [IntentsBitField.Flags.Guilds, IntentsBitField.Flags.GuildMessages, IntentsBitField.Flags.GuildMembers, IntentsBitField.Flags.GuildVoiceStates],
-                development: [configService.get('DISCORD_DEVELOPMENT_GUILD_ID')]
+                development: [configService.get('DISCORD_GUILD_ID')]
             }),
             inject: [ConfigService],
         }),
