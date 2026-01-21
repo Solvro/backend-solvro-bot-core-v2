@@ -16,7 +16,7 @@ export class MeetingsComponents {
     if (activeMeeting) {
       await interaction.reply({
         content: "❌ A meeting is already in progress. Please stop it before starting a new one.",
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
       return;
     }
@@ -27,7 +27,7 @@ export class MeetingsComponents {
     if (!channel) {
       await interaction.reply({
         content: "❌ You must be in a voice channel to start a meeting.",
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
       return;
     }
