@@ -52,7 +52,7 @@ export class MeetingsComponents {
 
   @necord.Modal('MODAL_START_WEEKLY')
   public async onStartWeeklyModal(@necord.Context() [interaction]: necord.ModalContext) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const name = interaction.fields.getTextInputValue('meetingName');
     const member = interaction.member as GuildMember;
@@ -89,7 +89,7 @@ export class MeetingsComponents {
 
   @necord.Button('BUTTON_STOP_WEEKLY')
   public async onStopWeeklyButton(@necord.Context() [interaction]: necord.ButtonContext) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const activeMeeting = await this.meetingsService.getActiveMeeting();
     if (!activeMeeting) {
@@ -108,7 +108,7 @@ export class MeetingsComponents {
 
   @necord.Button('BUTTON_ATTENDANCE')
   public async onAttendanceButton(@necord.Context() [interaction]: necord.ButtonContext) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const meetings = (await this.meetingsService.getMeetingsWithCompletedAttendance())
       .map(meeting => {
@@ -142,7 +142,7 @@ export class MeetingsComponents {
 
   @necord.Button('BUTTON_SUMMARY')
   public async onSummaryButton(@necord.Context() [interaction]: necord.ButtonContext) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const meetings = (await this.meetingsService.getMeetingsWithProcessedRecordings())
       .map(meeting => {
@@ -177,7 +177,7 @@ export class MeetingsComponents {
 
   @necord.Button('BUTTON_TRANSCRIPTION')
   public async onTranscriptionButton(@necord.Context() [interaction]: necord.ButtonContext) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const meetings = (await this.meetingsService.getMeetingsWithProcessedRecordings())
       .map(meeting => {
@@ -212,7 +212,7 @@ export class MeetingsComponents {
 
   @necord.StringSelect('ATTENDANCE_SELECT_MEETING_ID')
   public async onAttendanceSelectMeeting(@necord.Context() [interaction]: necord.StringSelectContext) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const meetingId = parseInt(interaction.values[0], 10);
     const csvContent = await this.filesService.generateAttendenceFile(meetingId);
@@ -235,7 +235,7 @@ export class MeetingsComponents {
 
   @necord.StringSelect('SUMMARY_SELECT_MEETING_ID')
   public async onSummarySelectMeeting(@necord.Context() [interaction]: necord.StringSelectContext) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const meetingId = parseInt(interaction.values[0], 10);
     const summary = await this.filesService.generateMeetingSummaryFile(meetingId);
@@ -282,7 +282,7 @@ export class MeetingsComponents {
 
   @necord.StringSelect('TRANSCRIPTION_SELECT_MEETING_ID')
   public async onTranscriptionSelectMeeting(@necord.Context() [interaction]: necord.StringSelectContext) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const meetingId = parseInt(interaction.values[0], 10);
     const transcription = await this.filesService.generateMeetingTranscriptFile(meetingId);
