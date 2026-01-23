@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
+import { GithubActivityType } from 'generated/prisma/enums';
 
 export interface ActivityStatsResult {
   sum: number;
@@ -7,6 +8,17 @@ export interface ActivityStatsResult {
   max: number;
   periodDescription: string;
   daysDiff: number | null;
+}
+
+export interface GithubActivityStatsResult {
+  type: GithubActivityType;
+  count: number;
+}
+
+
+export interface ChannelActivityResult {
+  channelId: string;
+  messageCount: number;
 }
 
 @Injectable()
@@ -108,5 +120,135 @@ export class ActivityService {
       daysDiff,
     };
   }
+
+  async getGithubActivityStats(discordUserId: string, startDateStr?: string, endDateStr?: string): Promise<{ stats: GithubActivityStatsResult[], periodDescription: string, memberName: string }> {
+    const member = await this.database.member.findUnique({
+      where: { discordId: discordUserId },
+    });
+
+    if (!member || !member.githubId) {
+      throw new Error('User not found in the database or has no GitHub ID linked.');
+    }
+
+    let startDate: Date | null = null;
+    let endDate: Date | null = null;
+
+    if (startDateStr) {
+      startDate = this.parseDate(startDateStr);
+      if (!startDate) {
+        throw new Error(`Invalid start date format: ${startDateStr}. Please use YYYY-MM-DD.`);
+      }
+    }
+
+    if (endDateStr) {
+      endDate = this.parseDate(endDateStr);
+      if (!endDate) {
+        throw new Error(`Invalid end date format: ${endDateStr}. Please use YYYY-MM-DD.`);
+      }
+      endDate.setHours(23, 59, 59, 999);
+    } else {
+      endDate = new Date();
+      endDate.setHours(23, 59, 59, 999);
+    }
+
+    if (startDate && endDate && startDate > endDate) {
+      throw new Error(`Start date must be before or equal to end date.`);
+    }
+
+    const whereClause: any = {
+      githubId: member.githubId,
+    };
+
+    if (startDate) {
+      whereClause.date = { ...whereClause.date, gte: startDate };
+    }
+    if (endDate) {
+      whereClause.date = { ...whereClause.date, lte: endDate };
+    }
+
+    const activity = await this.database.githubActivity.groupBy({
+      by: ['type'],
+      where: whereClause,
+      _count: {
+        githubId: true,
+      },
+    });
+
+
+    let periodDesc = 'all time';
+    if (startDate && endDateStr) {
+      periodDesc = `${startDateStr} to ${endDateStr}`;
+    } else if (startDate) {
+      periodDesc = `since ${startDateStr}`;
+    } else if (endDateStr) {
+      periodDesc = `up to ${endDateStr}`;
+    }
+
+
+    const stats = activity.map(a => ({
+      type: a.type,
+      count: a._count.githubId
+    }));
+
+    return {
+      stats,
+      periodDescription: periodDesc,
+      memberName: `${member.firstName || ''} ${member.lastName || ''}`.trim() || member.discordId,
+    };
+  }
+
+  async getChannelActivityStats(interval?: 'week' | 'month' | '6months'): Promise<{ channels: ChannelActivityResult[], periodDescription: string }> {
+    let since: Date | undefined;
+    const now = new Date();
+    let periodDesc = 'all time';
+
+    if (interval) {
+      since = new Date(now);
+      switch (interval) {
+        case 'week':
+          since.setDate(now.getDate() - 7);
+          periodDesc = 'last week';
+          break;
+        case 'month':
+          since.setMonth(now.getMonth() - 1);
+          periodDesc = 'last month';
+          break;
+        case '6months':
+          since.setMonth(now.getMonth() - 6);
+          periodDesc = 'last 6 months';
+          break;
+      }
+    }
+
+    const whereClause: any = {};
+    if (since) {
+      whereClause.date = { gte: since };
+    }
+
+    const result = await this.database.channelActivity.groupBy({
+      by: ['channelId'],
+      where: whereClause,
+      _sum: {
+        messageCount: true,
+      },
+      orderBy: {
+        _sum: {
+          messageCount: 'desc',
+        },
+      },
+      take: 10,
+    });
+
+    const channels = result.map(r => ({
+      channelId: r.channelId,
+      messageCount: r._sum.messageCount || 0,
+    }));
+
+    return {
+      channels,
+      periodDescription: periodDesc,
+    };
+  }
 }
+
 

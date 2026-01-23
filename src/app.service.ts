@@ -94,7 +94,10 @@ export class AppService {
             }
 
             const channelActivity = await tx.channelActivity.findFirst({
-                where: { channelId },
+                where: {
+                    channelId,
+                    date: today,
+                },
             });
 
             if (channelActivity) {
@@ -106,6 +109,7 @@ export class AppService {
                 await tx.channelActivity.create({
                     data: {
                         channelId,
+                        date: today,
                         messageCount: 1,
                     },
                 });
