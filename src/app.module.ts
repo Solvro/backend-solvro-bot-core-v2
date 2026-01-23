@@ -8,6 +8,7 @@ import { IntentsBitField } from 'discord.js';
 import { RecordingsModule } from './core/recordings/recordings.module';
 import { DatabaseModule } from './database/database.module';
 import { MeetingsModule } from './discord/meetings/meetings.module';
+import { ActivityModule } from './discord/activity/activity.module';
 import { GoogleModule } from './google/google.module';
 @Module({
     imports: [
@@ -39,7 +40,8 @@ import { GoogleModule } from './google/google.module';
         DatabaseModule,
         RecordingsModule,
         MeetingsModule,
-        GoogleModule
+        GoogleModule,
+        ActivityModule
     ],
     controllers: [AppController],
     providers: [AppService],
