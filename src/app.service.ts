@@ -53,4 +53,67 @@ export class AppService {
             }
         });
     }
+
+    @necord.On('messageCreate')
+    public async onMessageCreate(@necord.Context() [message]: necord.ContextOf<'messageCreate'>) {
+        if (message.author.bot) return;
+
+        const channelId = message.channel.id;
+        const discordId = message.author.id;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        await this.database.$transaction(async (tx) => {
+            const member = await tx.member.upsert({
+                where: { discordId },
+                create: { discordId },
+                update: {},
+            });
+
+            const discordActivity = await tx.discordActivity.findFirst({
+                where: {
+                    memberId: member.id,
+                    date: today,
+                },
+            });
+
+            if (discordActivity) {
+                await tx.discordActivity.update({
+                    where: { id: discordActivity.id },
+                    data: { messageCount: { increment: 1 } },
+                });
+            } else {
+                await tx.discordActivity.create({
+                    data: {
+                        memberId: member.id,
+                        date: today,
+                        messageCount: 1,
+                    },
+                });
+            }
+
+            const channelActivity = await tx.channelActivity.findFirst({
+                where: {
+                    channelId,
+                    date: today,
+                },
+            });
+
+            if (channelActivity) {
+                await tx.channelActivity.update({
+                    where: { id: channelActivity.id },
+                    data: { messageCount: { increment: 1 } },
+                });
+            } else {
+                await tx.channelActivity.create({
+                    data: {
+                        channelId,
+                        date: today,
+                        messageCount: 1,
+                    },
+                });
+            }
+        });
+    }
 }

@@ -8,7 +8,9 @@ import { IntentsBitField } from 'discord.js';
 import { RecordingsModule } from './core/recordings/recordings.module';
 import { DatabaseModule } from './database/database.module';
 import { MeetingsModule } from './discord/meetings/meetings.module';
+import { ActivityModule } from './discord/activity/activity.module';
 import { GoogleModule } from './google/google.module';
+import { GithubModule } from './core/github/github.module';
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -26,6 +28,7 @@ import { GoogleModule } from './google/google.module';
                 GOOGLE_REFRESH_TOKEN: Joi.string().allow('', null),
                 GOOGLE_DRIVE_FOLDER_ID: Joi.string().required(),
                 TRANSCRIBER_URL: Joi.string().uri().required(),
+                GITHUB_WEBHOOK_SECRET: Joi.string().required(),
             }),
         }),
         NecordModule.forRootAsync({
@@ -39,7 +42,9 @@ import { GoogleModule } from './google/google.module';
         DatabaseModule,
         RecordingsModule,
         MeetingsModule,
-        GoogleModule
+        GoogleModule,
+        ActivityModule,
+        GithubModule
     ],
     controllers: [AppController],
     providers: [AppService],
