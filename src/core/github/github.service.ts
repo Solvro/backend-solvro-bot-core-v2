@@ -47,25 +47,23 @@ export class GithubService {
                     const message = commit.message;
                     const date = new Date(commit.timestamp);
 
-                    const exists = await this.database.githubActivity.findFirst({
+                    await this.database.githubActivity.upsert({
                         where: {
-                            externalId: commitId,
-                            type: GithubActivityType.Commit,
-                        },
-                    });
-
-                    if (!exists) {
-                        await this.database.githubActivity.create({
-                            data: {
+                            externalId_type: {
                                 externalId: commitId,
                                 type: GithubActivityType.Commit,
-                                message,
-                                githubId: authorId,
-                                repo: fullRepoName,
-                                date: date,
                             },
-                        });
-                    }
+                        },
+                        create: {
+                            externalId: commitId,
+                            type: GithubActivityType.Commit,
+                            message,
+                            githubId: authorId,
+                            repo: fullRepoName,
+                            date: date,
+                        },
+                        update: {},
+                    });
                 }
                 break;
             }
@@ -82,25 +80,23 @@ export class GithubService {
 
                     this.logger.debug(`Github webhook event: ${event}, user ${authorId} created/edited ${issue.title} issue`);
 
-                    const exists = await this.database.githubActivity.findFirst({
+                    await this.database.githubActivity.upsert({
                         where: {
-                            externalId: issueNodeId,
-                            type: GithubActivityType.Issue,
-                        },
-                    });
-
-                    if (!exists) {
-                        await this.database.githubActivity.create({
-                            data: {
+                            externalId_type: {
                                 externalId: issueNodeId,
                                 type: GithubActivityType.Issue,
-                                message,
-                                githubId: authorId,
-                                repo: fullRepoName,
-                                date: date,
                             },
-                        });
-                    }
+                        },
+                        create: {
+                            externalId: issueNodeId,
+                            type: GithubActivityType.Issue,
+                            message,
+                            githubId: authorId,
+                            repo: fullRepoName,
+                            date: date,
+                        },
+                        update: {},
+                    });
                 }
                 break;
             }
@@ -117,25 +113,23 @@ export class GithubService {
 
                     this.logger.debug(`Github webhook event: ${event}, user ${authorId} created/reopened/edited ${pr.title} pull request`);
 
-                    const exists = await this.database.githubActivity.findFirst({
+                    await this.database.githubActivity.upsert({
                         where: {
-                            externalId: prNodeId,
-                            type: GithubActivityType.PullRequest,
-                        },
-                    });
-
-                    if (!exists) {
-                        await this.database.githubActivity.create({
-                            data: {
+                            externalId_type: {
                                 externalId: prNodeId,
                                 type: GithubActivityType.PullRequest,
-                                message,
-                                githubId: authorId,
-                                repo: fullRepoName,
-                                date: date,
                             },
-                        });
-                    }
+                        },
+                        create: {
+                            externalId: prNodeId,
+                            type: GithubActivityType.PullRequest,
+                            message,
+                            githubId: authorId,
+                            repo: fullRepoName,
+                            date: date,
+                        },
+                        update: {},
+                    });
                 }
                 break;
             }
@@ -151,25 +145,23 @@ export class GithubService {
 
                 this.logger.debug(`Github webhook event: ${event}, user ${authorId} reviewed a pull request`);
 
-                const exists = await this.database.githubActivity.findFirst({
+                await this.database.githubActivity.upsert({
                     where: {
-                        externalId: reviewNodeId,
-                        type: GithubActivityType.Review,
-                    },
-                });
-
-                if (!exists) {
-                    await this.database.githubActivity.create({
-                        data: {
+                        externalId_type: {
                             externalId: reviewNodeId,
                             type: GithubActivityType.Review,
-                            message,
-                            githubId: authorId,
-                            repo: fullRepoName,
-                            date: date,
                         },
-                    });
-                }
+                    },
+                    create: {
+                        externalId: reviewNodeId,
+                        type: GithubActivityType.Review,
+                        message,
+                        githubId: authorId,
+                        repo: fullRepoName,
+                        date: date,
+                    },
+                    update: {},
+                });
                 break;
             }
 

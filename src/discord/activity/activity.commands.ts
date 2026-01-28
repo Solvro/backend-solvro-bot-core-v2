@@ -96,16 +96,10 @@ export class ActivityCommands {
         return;
       }
 
-      const lines = await Promise.all(
-        stats.channels.map(async (c, idx) => {
-          try {
-            const channel = await this.client.channels.fetch(c.channelId);
-            return `${idx + 1}. ${channel ? `<#${c.channelId}>` : `ID: ${c.channelId}`} — ${c.messageCount} messages`;
-          } catch {
-            return `${idx + 1}. ID: ${c.channelId} — ${c.messageCount} messages`;
-          }
-        })
-      );
+      const lines = stats.channels.map((c, idx) => {
+        const channel = interaction.guild?.channels.cache.get(c.channelId);
+        return `${idx + 1}. ${channel ? `<#${c.channelId}>` : `ID: ${c.channelId}`} — ${c.messageCount} messages`;
+      });
 
       await interaction.editReply({
         content: `**Most active channels (${stats.periodDescription}):**\n${lines.join('\n')}`,

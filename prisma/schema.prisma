@@ -152,6 +152,7 @@ model GithubActivity {
     member Member? @relation(fields: [githubId], references: [githubId], onDelete: Cascade)
 
     @@index([date])
+    @@unique([externalId, type])
 }
 
 model ChannelActivity {

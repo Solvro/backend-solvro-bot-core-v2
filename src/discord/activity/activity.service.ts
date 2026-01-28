@@ -52,7 +52,7 @@ export class ActivityService {
     return date;
   }
 
-  async getUserActivityStats(discordUserId: string, startDateStr?: string, endDateStr?: string): Promise<ActivityStatsResult> {
+  private getValidatedDateRange(startDateStr?: string, endDateStr?: string): { startDate: Date | null, endDate: Date | null, periodDescription: string } {
     let startDate: Date | null = null;
     let endDate: Date | null = null;
 
@@ -68,7 +68,6 @@ export class ActivityService {
       if (!endDate) {
         throw new Error(`Invalid end date format: ${endDateStr}. Please use YYYY-MM-DD.`);
       }
-      // Set to end of day
       endDate.setHours(23, 59, 59, 999);
     } else {
       endDate = new Date();
@@ -79,17 +78,35 @@ export class ActivityService {
       throw new Error(`Start date (${startDateStr}) must be before or equal to end date (${endDateStr || 'today'}).`);
     }
 
+    let periodDescription = 'all time';
+    if (startDate && endDateStr) {
+      periodDescription = `${startDateStr} to ${endDateStr}`;
+    } else if (startDate) {
+      periodDescription = `since ${startDateStr}`;
+    } else if (endDateStr) {
+      periodDescription = `up to ${endDateStr}`;
+    }
+
+    return { startDate, endDate, periodDescription };
+  }
+
+  async getUserActivityStats(discordUserId: string, startDateStr?: string, endDateStr?: string): Promise<ActivityStatsResult> {
+    const { startDate, endDate, periodDescription } = this.getValidatedDateRange(startDateStr, endDateStr);
+
     const whereClause: any = {
       member: {
         discordId: discordUserId,
       },
     };
 
-    if (startDate) {
-      whereClause.date = { ...whereClause.date, gte: startDate };
-    }
-    if (endDate) {
-      whereClause.date = { ...whereClause.date, lte: endDate };
+    if (startDate || endDate) {
+      whereClause.date = {};
+      if (startDate) {
+        whereClause.date.gte = startDate;
+      }
+      if (endDate) {
+        whereClause.date.lte = endDate;
+      }
     }
 
     const result = await this.database.discordActivity.aggregate({
@@ -99,15 +116,6 @@ export class ActivityService {
       _max: { messageCount: true },
     });
 
-    let periodDesc = 'all time';
-    if (startDate && endDateStr) {
-      periodDesc = `${startDateStr} to ${endDateStr}`;
-    } else if (startDate) {
-      periodDesc = `since ${startDateStr}`;
-    } else if (endDateStr) {
-      periodDesc = `up to ${endDateStr}`;
-    }
-
     const daysDiff = startDate && endDate
       ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
       : null;
@@ -116,7 +124,7 @@ export class ActivityService {
       sum: result._sum.messageCount || 0,
       avg: result._avg.messageCount || 0,
       max: result._max.messageCount || 0,
-      periodDescription: periodDesc,
+      periodDescription,
       daysDiff,
     };
   }
@@ -130,40 +138,20 @@ export class ActivityService {
       throw new Error('User not found in the database or has no GitHub ID linked.');
     }
 
-    let startDate: Date | null = null;
-    let endDate: Date | null = null;
-
-    if (startDateStr) {
-      startDate = this.parseDate(startDateStr);
-      if (!startDate) {
-        throw new Error(`Invalid start date format: ${startDateStr}. Please use YYYY-MM-DD.`);
-      }
-    }
-
-    if (endDateStr) {
-      endDate = this.parseDate(endDateStr);
-      if (!endDate) {
-        throw new Error(`Invalid end date format: ${endDateStr}. Please use YYYY-MM-DD.`);
-      }
-      endDate.setHours(23, 59, 59, 999);
-    } else {
-      endDate = new Date();
-      endDate.setHours(23, 59, 59, 999);
-    }
-
-    if (startDate && endDate && startDate > endDate) {
-      throw new Error(`Start date must be before or equal to end date.`);
-    }
+    const { startDate, endDate, periodDescription } = this.getValidatedDateRange(startDateStr, endDateStr);
 
     const whereClause: any = {
       githubId: member.githubId,
     };
 
-    if (startDate) {
-      whereClause.date = { ...whereClause.date, gte: startDate };
-    }
-    if (endDate) {
-      whereClause.date = { ...whereClause.date, lte: endDate };
+    if (startDate || endDate) {
+      whereClause.date = {};
+      if (startDate) {
+        whereClause.date.gte = startDate;
+      }
+      if (endDate) {
+        whereClause.date.lte = endDate;
+      }
     }
 
     const activity = await this.database.githubActivity.groupBy({
@@ -174,17 +162,6 @@ export class ActivityService {
       },
     });
 
-
-    let periodDesc = 'all time';
-    if (startDate && endDateStr) {
-      periodDesc = `${startDateStr} to ${endDateStr}`;
-    } else if (startDate) {
-      periodDesc = `since ${startDateStr}`;
-    } else if (endDateStr) {
-      periodDesc = `up to ${endDateStr}`;
-    }
-
-
     const stats = activity.map(a => ({
       type: a.type,
       count: a._count.githubId
@@ -192,7 +169,7 @@ export class ActivityService {
 
     return {
       stats,
-      periodDescription: periodDesc,
+      periodDescription,
       memberName: `${member.firstName || ''} ${member.lastName || ''}`.trim() || member.discordId,
     };
   }

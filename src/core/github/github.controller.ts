@@ -14,6 +14,11 @@ export class GithubController {
 
   @Post()
   async webhook(@Headers('X-GitHub-Event') event: string, @Headers('X-Hub-Signature-256') signature: string, @Req() req: RequestWithRawBody) {
+    if (!event) {
+      this.logger.debug("Github webhook: Missing event header");
+      throw new BadRequestException('Missing event header');
+    }
+
     if (!signature) {
       this.logger.debug("Github webhook: Missing signature");
       throw new UnauthorizedException('Missing signature');
@@ -35,9 +40,13 @@ export class GithubController {
     try {
       await this.githubService.handleWebhook(event, payload);
       return { message: 'Webhook processed.' };
-    } catch (error) {
-      this.logger.error('Error processing GitHub webhook', error);
-      throw new BadRequestException('Error processing GitHub webhook');
+    } catch (err) {
+      const originalMessage = err && err.message ? err.message : String(err);
+      this.logger.error('Error processing GitHub webhook', err?.stack ?? originalMessage);
+      if (err instanceof BadRequestException || err instanceof UnauthorizedException) {
+        throw err;
+      }
+      throw new BadRequestException(`Error processing GitHub webhook: ${originalMessage}`);
     }
   }
 }
