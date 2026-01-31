@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Client, GuildManager } from 'discord.js';
-import { RecordingState } from 'generated/prisma/enums';
 import { DatabaseService } from 'src/database/database.service';
 
 function formatTimestamp(seconds: number): string {
@@ -13,7 +12,7 @@ function formatTimestamp(seconds: number): string {
 export class FilesService {
   constructor(private database: DatabaseService, private readonly client: Client, private readonly guilds: GuildManager, private readonly configService: ConfigService) { }
 
-  public async generateAttendenceFile(meetingId: number): Promise<string | null> {
+  public async generateAttendanceFile(meetingId: number): Promise<string | null> {
     const attendees = await this.database.member.findMany({
       where: { meetings: { some: { id: meetingId } } },
     })

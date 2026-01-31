@@ -215,7 +215,7 @@ export class MeetingsComponents {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const meetingId = parseInt(interaction.values[0], 10);
-    const csvContent = await this.filesService.generateAttendenceFile(meetingId);
+    const csvContent = await this.filesService.generateAttendanceFile(meetingId);
 
     if (!csvContent) {
       await interaction.editReply({
