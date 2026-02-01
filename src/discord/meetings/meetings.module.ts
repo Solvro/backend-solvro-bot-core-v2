@@ -3,8 +3,11 @@ import { MeetingsService } from './meetings.service';
 import { MeetingsCommands } from './meetings.commands';
 import { MeetingsComponents } from './meetings.components';
 import { DatabaseService } from 'src/database/database.service';
+import { ConfigModule } from '@nestjs/config';
+import { FilesModule } from 'src/files/files.module';
 
 @Module({
-  providers: [MeetingsService, MeetingsCommands, MeetingsComponents]
+  providers: [MeetingsService, MeetingsCommands, MeetingsComponents],
+  imports: [ConfigModule, FilesModule],
 })
 export class MeetingsModule {}
