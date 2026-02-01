@@ -22,14 +22,14 @@ import { OfficeCameraModule } from './office-camera/office-camera.module';
     }),
     NecordModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
-        token: configService.get('DISCORD_TOKEN'),
+        token: configService.get('DISCORD_TOKEN') ?? '',
         intents: [
           IntentsBitField.Flags.Guilds,
           IntentsBitField.Flags.GuildMessages,
           IntentsBitField.Flags.GuildMembers,
           IntentsBitField.Flags.GuildVoiceStates,
         ],
-        development: [configService.get('DISCORD_GUILD_ID')],
+        development: [configService.get('DISCORD_GUILD_ID') ?? ''],
       }),
       inject: [ConfigService],
     }),
