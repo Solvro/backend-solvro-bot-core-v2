@@ -22,26 +22,45 @@ export class OfficeCameraService {
     }
 
     async sendEmbedWithoutImage(message: Message, peopleCount: number, lastPresence: Date | null, lastUpdate: Date) {
-        let presence = lastPresence == null ? "-" : `<t:${Math.floor(lastPresence.getTime() / 1000)}:R>`;
+        const isOccupied = peopleCount > 0;
+        const presence = lastPresence == null ? "-" : `<t:${Math.floor(lastPresence.getTime() / 1000)}:R>`;
 
         const embed = new EmbedBuilder()
-            .setTitle('📷 Latest Office Presence Update')
-            .setDescription(`Updated: <t:${Math.floor(lastUpdate.getTime() / 1000)}:R>`)
-            .addFields({ name: 'Current People in Office', value: `**${peopleCount}**`, inline: true })
-            .addFields({ name: 'Last Presence Detected', value: presence, inline: true })
-            .setColor(0x57f287);
+            .setTitle(isOccupied ? '🟢 Office Activity Detected' : '💤 Office is currently empty')
+            .setDescription(`**Updated:** <t:${Math.floor(lastUpdate.getTime() / 1000)}:R>`)
+            .addFields(
+                { name: '👥 Detected People', value: `**${peopleCount}**`, inline: true },
+                { name: '🕒 Last Activity', value: presence, inline: true }
+            )
+            .setColor(isOccupied ? 0x57f287 : 0x3498db)
+            .setFooter({ text: 'Solvro Office Camera' })
+            .setTimestamp(lastUpdate);
 
         await message.edit({ content: "", embeds: [embed] });
     }
 
     async sendEmbedWithImage(message: Message, peopleCount: number, lastPresence: Date, imagePath: string, lastUpdate: Date) {
+        const isOccupied = peopleCount > 0;
+
         const embed = new EmbedBuilder()
-            .setTitle('📷 Latest Office Presence Update')
-            .setDescription(`Updated: <t:${Math.floor(lastUpdate.getTime() / 1000)}:R>`)
-            .addFields({ name: 'Current People in Office', value: `**${peopleCount}**`, inline: true })
-            .addFields({ name: 'Last Presence Detected', value: `<t:${Math.floor(lastPresence.getTime() / 1000)}:R>`, inline: true })
+            .setTitle(isOccupied ? '🟢 Office Activity Detected' : '💤 Office is currently empty')
+            .addFields(
+                { name: '👥 Detected People', value: `**${peopleCount}**`, inline: true },
+                { name: '🕒 Last Activity', value: `<t:${Math.floor(lastPresence.getTime() / 1000)}:R>`, inline: true }
+            )
             .setImage('attachment://camera.jpg')
-            .setColor(0x57f287);
+            .setColor(isOccupied ? 0x57f287 : 0x3498db)
+            .setFooter({ text: 'Solvro Office Camera' })
+            .setTimestamp(lastUpdate);
+
+        if (isOccupied) {
+            embed.setDescription(`**Updated:** <t:${Math.floor(lastUpdate.getTime() / 1000)}:R>`);
+        } else {
+            embed.setDescription(
+                `**Updated:** <t:${Math.floor(lastUpdate.getTime() / 1000)}:R>\n\n` +
+                `*ℹ️ The image below is a snapshot from the last detected activity, not a live feed.*`
+            );
+        }
 
         await message.edit({ content: "", embeds: [embed], files: [{ attachment: imagePath, name: 'camera.jpg' }], });
     }
