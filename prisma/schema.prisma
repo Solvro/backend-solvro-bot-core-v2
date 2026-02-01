@@ -153,16 +153,19 @@ model GithubActivity {
     member Member? @relation(fields: [githubId], references: [githubId], onDelete: Cascade)
 
     @@index([date])
+    @@unique([externalId, type])
 }
 
 model ChannelActivity {
     id           Int      @id @default(autoincrement())
     channelId    String
     messageCount Int
+    date         DateTime @db.Date
     createdAt    DateTime @default(now())
     updatedAt    DateTime @updatedAt
 
     @@index([channelId])
+    @@index([date])
 }
 
 model OfficeStatusSnapshot {
