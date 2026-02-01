@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
 import { GithubActivityType } from 'generated/prisma/enums';
+import { Prisma } from 'generated/prisma/client';
 
 export interface ActivityStatsResult {
   sum: number;
@@ -15,7 +16,6 @@ export interface GithubActivityStatsResult {
   count: number;
 }
 
-
 export interface ChannelActivityResult {
   channelId: string;
   messageCount: number;
@@ -23,7 +23,7 @@ export interface ChannelActivityResult {
 
 @Injectable()
 export class ActivityService {
-  constructor(private readonly database: DatabaseService) { }
+  constructor(private readonly database: DatabaseService) {}
 
   private parseDate(dateString: string): Date | null {
     const dateRegex = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -52,21 +52,32 @@ export class ActivityService {
     return date;
   }
 
-  private getValidatedDateRange(startDateStr?: string, endDateStr?: string): { startDate: Date | null, endDate: Date | null, periodDescription: string } {
+  private getValidatedDateRange(
+    startDateStr?: string,
+    endDateStr?: string,
+  ): {
+    startDate: Date | null;
+    endDate: Date | null;
+    periodDescription: string;
+  } {
     let startDate: Date | null = null;
     let endDate: Date | null = null;
 
     if (startDateStr) {
       startDate = this.parseDate(startDateStr);
       if (!startDate) {
-        throw new Error(`Invalid start date format: ${startDateStr}. Please use YYYY-MM-DD.`);
+        throw new Error(
+          `Invalid start date format: ${startDateStr}. Please use YYYY-MM-DD.`,
+        );
       }
     }
 
     if (endDateStr) {
       endDate = this.parseDate(endDateStr);
       if (!endDate) {
-        throw new Error(`Invalid end date format: ${endDateStr}. Please use YYYY-MM-DD.`);
+        throw new Error(
+          `Invalid end date format: ${endDateStr}. Please use YYYY-MM-DD.`,
+        );
       }
       endDate.setHours(23, 59, 59, 999);
     } else {
@@ -75,7 +86,9 @@ export class ActivityService {
     }
 
     if (startDate && endDate && startDate > endDate) {
-      throw new Error(`Start date (${startDateStr}) must be before or equal to end date (${endDateStr || 'today'}).`);
+      throw new Error(
+        `Start date (${startDateStr}) must be before or equal to end date (${endDateStr || 'today'}).`,
+      );
     }
 
     let periodDescription = 'all time';
@@ -90,10 +103,15 @@ export class ActivityService {
     return { startDate, endDate, periodDescription };
   }
 
-  async getUserActivityStats(discordUserId: string, startDateStr?: string, endDateStr?: string): Promise<ActivityStatsResult> {
-    const { startDate, endDate, periodDescription } = this.getValidatedDateRange(startDateStr, endDateStr);
+  async getUserActivityStats(
+    discordUserId: string,
+    startDateStr?: string,
+    endDateStr?: string,
+  ): Promise<ActivityStatsResult> {
+    const { startDate, endDate, periodDescription } =
+      this.getValidatedDateRange(startDateStr, endDateStr);
 
-    const whereClause: any = {
+    const whereClause: Prisma.DiscordActivityWhereInput = {
       member: {
         discordId: discordUserId,
       },
@@ -116,9 +134,12 @@ export class ActivityService {
       _max: { messageCount: true },
     });
 
-    const daysDiff = startDate && endDate
-      ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-      : null;
+    const daysDiff =
+      startDate && endDate
+        ? Math.ceil(
+            (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+          )
+        : null;
 
     return {
       sum: result._sum.messageCount || 0,
@@ -129,18 +150,29 @@ export class ActivityService {
     };
   }
 
-  async getGithubActivityStats(discordUserId: string, startDateStr?: string, endDateStr?: string): Promise<{ stats: GithubActivityStatsResult[], periodDescription: string, memberName: string }> {
+  async getGithubActivityStats(
+    discordUserId: string,
+    startDateStr?: string,
+    endDateStr?: string,
+  ): Promise<{
+    stats: GithubActivityStatsResult[];
+    periodDescription: string;
+    memberName: string;
+  }> {
     const member = await this.database.member.findUnique({
       where: { discordId: discordUserId },
     });
 
     if (!member || !member.githubId) {
-      throw new Error('User not found in the database or has no GitHub ID linked.');
+      throw new Error(
+        'User not found in the database or has no GitHub ID linked.',
+      );
     }
 
-    const { startDate, endDate, periodDescription } = this.getValidatedDateRange(startDateStr, endDateStr);
+    const { startDate, endDate, periodDescription } =
+      this.getValidatedDateRange(startDateStr, endDateStr);
 
-    const whereClause: any = {
+    const whereClause: Prisma.GithubActivityWhereInput = {
       githubId: member.githubId,
     };
 
@@ -162,19 +194,23 @@ export class ActivityService {
       },
     });
 
-    const stats = activity.map(a => ({
+    const stats = activity.map((a) => ({
       type: a.type,
-      count: a._count.githubId
+      count: a._count.githubId,
     }));
 
     return {
       stats,
       periodDescription,
-      memberName: `${member.firstName || ''} ${member.lastName || ''}`.trim() || member.discordId,
+      memberName:
+        `${member.firstName || ''} ${member.lastName || ''}`.trim() ||
+        member.discordId,
     };
   }
 
-  async getChannelActivityStats(interval?: 'week' | 'month' | '6months'): Promise<{ channels: ChannelActivityResult[], periodDescription: string }> {
+  async getChannelActivityStats(
+    interval?: 'week' | 'month' | '6months',
+  ): Promise<{ channels: ChannelActivityResult[]; periodDescription: string }> {
     let since: Date | undefined;
     const now = new Date();
     let periodDesc = 'all time';
@@ -197,7 +233,7 @@ export class ActivityService {
       }
     }
 
-    const whereClause: any = {};
+    const whereClause: Prisma.ChannelActivityWhereInput = {};
     if (since) {
       whereClause.date = { gte: since };
     }
@@ -216,7 +252,7 @@ export class ActivityService {
       take: 10,
     });
 
-    const channels = result.map(r => ({
+    const channels = result.map((r) => ({
       channelId: r.channelId,
       messageCount: r._sum.messageCount || 0,
     }));
@@ -227,5 +263,3 @@ export class ActivityService {
     };
   }
 }
-
-

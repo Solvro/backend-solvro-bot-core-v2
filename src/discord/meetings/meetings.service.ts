@@ -2,16 +2,27 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { VoiceBasedChannel } from 'discord.js';
 import { Meeting } from 'generated/prisma/client';
-import { AttendanceState, RecordingState, MeetingType } from 'generated/prisma/enums';
+import {
+  AttendanceState,
+  RecordingState,
+  MeetingType,
+} from 'generated/prisma/enums';
 import { DatabaseService } from 'src/database/database.service';
 
 @Injectable()
 export class MeetingsService {
   private readonly logger = new Logger(MeetingsService.name);
 
-  constructor(private database: DatabaseService, private configService: ConfigService) { }
+  constructor(
+    private database: DatabaseService,
+    private configService: ConfigService,
+  ) {}
 
-  private async startTranscriber(channelId: string, meetingId: number, meetingName: string): Promise<boolean> {
+  private async startTranscriber(
+    channelId: string,
+    meetingId: number,
+    meetingName: string,
+  ): Promise<boolean> {
     try {
       // send request to transcriber service to start recording
       const transcriberUrl = this.configService.get<string>('TRANSCRIBER_URL');
@@ -39,23 +50,26 @@ export class MeetingsService {
         method: 'POST',
       });
       return response.ok;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
 
-  private async startAttendanceMonitoring(meetingId: number, channel: VoiceBasedChannel): Promise<void> {
+  private async startAttendanceMonitoring(
+    meetingId: number,
+    channel: VoiceBasedChannel,
+  ): Promise<void> {
     await this.database.meeting.update({
       where: { id: meetingId },
       data: {
         attendanceStatus: AttendanceState.Monitoring,
         attendees: {
-          connectOrCreate: channel.members.map(member => ({
+          connectOrCreate: channel.members.map((member) => ({
             where: { discordId: member.id },
             create: { discordId: member.id },
           })),
-        }
-      }
+        },
+      },
     });
   }
 
@@ -64,7 +78,7 @@ export class MeetingsService {
       where: { id: meetingId },
       data: {
         attendanceStatus: AttendanceState.Completed,
-      }
+      },
     });
   }
 
@@ -87,9 +101,13 @@ export class MeetingsService {
       data: {
         name,
         discordChannelId: channel.id,
-        attendanceStatus: enableAttendance ? AttendanceState.Monitoring : AttendanceState.Idle,
+        attendanceStatus: enableAttendance
+          ? AttendanceState.Monitoring
+          : AttendanceState.Idle,
         meetingType,
-        recordingStatus: enableTranscription ? RecordingState.InProgress : RecordingState.NotRecorded,
+        recordingStatus: enableTranscription
+          ? RecordingState.InProgress
+          : RecordingState.NotRecorded,
       },
     });
 
@@ -159,48 +177,54 @@ export class MeetingsService {
     return meetings;
   }
 
-  public chunkStringRespectingLinesAndWords(text: string, maxLength = 2000): string[] {
-    const chunks: string[] = []
-    const lines = text.split('\n')
-    let currentChunk = ''
+  public chunkStringRespectingLinesAndWords(
+    text: string,
+    maxLength = 2000,
+  ): string[] {
+    const chunks: string[] = [];
+    const lines = text.split('\n');
+    let currentChunk = '';
 
     for (const line of lines) {
       if ((currentChunk + '\n' + line).length <= maxLength) {
-        currentChunk += (currentChunk ? '\n' : '') + line
+        currentChunk += (currentChunk ? '\n' : '') + line;
       } else {
         if (line.length > maxLength) {
           // The line itself is too long – split by words
-          const words = line.split(' ')
-          let lineChunk = ''
+          const words = line.split(' ');
+          let lineChunk = '';
           for (const word of words) {
             if ((lineChunk + ' ' + word).length <= maxLength) {
-              lineChunk += (lineChunk ? ' ' : '') + word
+              lineChunk += (lineChunk ? ' ' : '') + word;
             } else {
               // Save current and start new
-              if (lineChunk) chunks.push(currentChunk + (currentChunk ? '\n' : '') + lineChunk)
-              else chunks.push(currentChunk)
-              currentChunk = ''
-              lineChunk = word
+              if (lineChunk)
+                chunks.push(
+                  currentChunk + (currentChunk ? '\n' : '') + lineChunk,
+                );
+              else chunks.push(currentChunk);
+              currentChunk = '';
+              lineChunk = word;
             }
           }
           if (lineChunk) {
             if ((currentChunk + '\n' + lineChunk).length <= maxLength) {
-              currentChunk += (currentChunk ? '\n' : '') + lineChunk
+              currentChunk += (currentChunk ? '\n' : '') + lineChunk;
             } else {
-              chunks.push(currentChunk)
-              currentChunk = lineChunk
+              chunks.push(currentChunk);
+              currentChunk = lineChunk;
             }
           }
         } else {
           // Normal case: commit current chunk and start new
-          if (currentChunk) chunks.push(currentChunk)
-          currentChunk = line
+          if (currentChunk) chunks.push(currentChunk);
+          currentChunk = line;
         }
       }
     }
 
-    if (currentChunk) chunks.push(currentChunk)
+    if (currentChunk) chunks.push(currentChunk);
 
-    return chunks
+    return chunks;
   }
 }

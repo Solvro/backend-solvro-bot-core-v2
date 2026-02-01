@@ -1,190 +1,251 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { Client, EmbedBuilder, TextChannel, Message } from 'discord.js';
 import { DatabaseService } from 'src/database/database.service';
 
 @Injectable()
 export class OfficeCameraService {
-    private readonly logger = new Logger(OfficeCameraService.name);
+  private readonly logger = new Logger(OfficeCameraService.name);
 
-    constructor(
-        private readonly database: DatabaseService,
-        private readonly client: Client
-    ) { }
+  constructor(
+    private readonly database: DatabaseService,
+    private readonly client: Client,
+  ) {}
 
-    private async getOrCreateMessage(channel: TextChannel, messageId: string) {
-        try {
-            return await channel.messages.fetch(messageId);
-        } catch (error) {
-            this.logger.error(
-                'Failed to fetch existing office camera message. Creating a new one.',
-                error instanceof Error ? error.stack : String(error),
-            );
-            return await channel.send({ content: "This is office camera widget. Awaiting first update..." });
+  private async getOrCreateMessage(channel: TextChannel, messageId: string) {
+    try {
+      return await channel.messages.fetch(messageId);
+    } catch (error) {
+      this.logger.error(
+        'Failed to fetch existing office camera message. Creating a new one.',
+        error instanceof Error ? error.stack : String(error),
+      );
+      return await channel.send({
+        content: 'This is office camera widget. Awaiting first update...',
+      });
+    }
+  }
+
+  async sendEmbedWithoutImage(
+    message: Message,
+    peopleCount: number,
+    lastPresence: Date | null,
+    lastUpdate: Date,
+  ) {
+    const isOccupied = peopleCount > 0;
+    const presence =
+      lastPresence === null
+        ? '-'
+        : `<t:${Math.floor(lastPresence.getTime() / 1000)}:R>`;
+
+    const embed = new EmbedBuilder()
+      .setTitle(
+        isOccupied
+          ? '🟢 Office Activity Detected'
+          : '💤 Office is currently empty',
+      )
+      .setDescription(
+        `**Updated:** <t:${Math.floor(lastUpdate.getTime() / 1000)}:R>`,
+      )
+      .addFields(
+        {
+          name: '👥 Detected People',
+          value: `**${peopleCount}**`,
+          inline: true,
+        },
+        { name: '🕒 Last Activity', value: presence, inline: true },
+      )
+      .setColor(isOccupied ? 0x57f287 : 0x3498db)
+      .setFooter({ text: 'Solvro Office Camera' })
+      .setTimestamp(lastUpdate);
+
+    await message.edit({ content: '', embeds: [embed] });
+  }
+
+  async sendEmbedWithImage(
+    message: Message,
+    peopleCount: number,
+    lastPresence: Date,
+    imagePath: string,
+    lastUpdate: Date,
+  ) {
+    const isOccupied = peopleCount > 0;
+
+    const embed = new EmbedBuilder()
+      .setTitle(
+        isOccupied
+          ? '🟢 Office Activity Detected'
+          : '💤 Office is currently empty',
+      )
+      .addFields(
+        {
+          name: '👥 Detected People',
+          value: `**${peopleCount}**`,
+          inline: true,
+        },
+        {
+          name: '🕒 Last Activity',
+          value: `<t:${Math.floor(lastPresence.getTime() / 1000)}:R>`,
+          inline: true,
+        },
+      )
+      .setImage('attachment://camera.jpg')
+      .setColor(isOccupied ? 0x57f287 : 0x3498db)
+      .setFooter({ text: 'Solvro Office Camera' })
+      .setTimestamp(lastUpdate);
+
+    if (isOccupied) {
+      embed.setDescription(
+        `**Updated:** <t:${Math.floor(lastUpdate.getTime() / 1000)}:R>`,
+      );
+    } else {
+      embed.setDescription(
+        `**Updated:** <t:${Math.floor(lastUpdate.getTime() / 1000)}:R>\n\n` +
+          `*ℹ️ The image below is a snapshot from the last detected activity, not a live feed.*`,
+      );
+    }
+
+    await message.edit({
+      content: '',
+      embeds: [embed],
+      files: [{ attachment: imagePath, name: 'camera.jpg' }],
+    });
+  }
+
+  async updateStatusMessages(
+    peopleCount: number,
+    lastUpdate: Date,
+    image: string | null = null,
+  ) {
+    const snapshots = await this.database.officeStatusSnapshot.findMany();
+
+    if (snapshots.length === 0) return;
+
+    for (const snapshot of snapshots) {
+      try {
+        const channel = await this.client.channels.fetch(snapshot.channelId);
+        if (!channel || !channel.isTextBased()) continue;
+
+        const message = await this.getOrCreateMessage(
+          channel as TextChannel,
+          snapshot.messageId,
+        );
+
+        // Determine last presence
+        let lastPresence = snapshot.lastPresenceDetectedAt;
+        if (peopleCount > 0) {
+          lastPresence = lastUpdate;
         }
-    }
 
-    async sendEmbedWithoutImage(message: Message, peopleCount: number, lastPresence: Date | null, lastUpdate: Date) {
-        const isOccupied = peopleCount > 0;
-        const presence = lastPresence === null ? "-" : `<t:${Math.floor(lastPresence.getTime() / 1000)}:R>`;
+        // Update Database
+        await this.database.officeStatusSnapshot.update({
+          where: { id: snapshot.id },
+          data: {
+            messageId: message.id,
+            currentPersonCount: peopleCount,
+            lastMessageUpdatedAt: lastUpdate,
+            lastPresenceDetectedAt: lastPresence,
+            imagePath: image ?? snapshot.imagePath,
+          },
+        });
 
-        const embed = new EmbedBuilder()
-            .setTitle(isOccupied ? '🟢 Office Activity Detected' : '💤 Office is currently empty')
-            .setDescription(`**Updated:** <t:${Math.floor(lastUpdate.getTime() / 1000)}:R>`)
-            .addFields(
-                { name: '👥 Detected People', value: `**${peopleCount}**`, inline: true },
-                { name: '🕒 Last Activity', value: presence, inline: true }
-            )
-            .setColor(isOccupied ? 0x57f287 : 0x3498db)
-            .setFooter({ text: 'Solvro Office Camera' })
-            .setTimestamp(lastUpdate);
+        const finalImagePath = image ?? snapshot.imagePath;
 
-        await message.edit({ content: "", embeds: [embed] });
-    }
-
-    async sendEmbedWithImage(message: Message, peopleCount: number, lastPresence: Date, imagePath: string, lastUpdate: Date) {
-        const isOccupied = peopleCount > 0;
-
-        const embed = new EmbedBuilder()
-            .setTitle(isOccupied ? '🟢 Office Activity Detected' : '💤 Office is currently empty')
-            .addFields(
-                { name: '👥 Detected People', value: `**${peopleCount}**`, inline: true },
-                { name: '🕒 Last Activity', value: `<t:${Math.floor(lastPresence.getTime() / 1000)}:R>`, inline: true }
-            )
-            .setImage('attachment://camera.jpg')
-            .setColor(isOccupied ? 0x57f287 : 0x3498db)
-            .setFooter({ text: 'Solvro Office Camera' })
-            .setTimestamp(lastUpdate);
-
-        if (isOccupied) {
-            embed.setDescription(`**Updated:** <t:${Math.floor(lastUpdate.getTime() / 1000)}:R>`);
+        if (finalImagePath) {
+          await this.sendEmbedWithImage(
+            message,
+            peopleCount,
+            lastPresence ? new Date(lastPresence) : lastUpdate, // Safe fallback
+            finalImagePath,
+            lastUpdate,
+          );
         } else {
-            embed.setDescription(
-                `**Updated:** <t:${Math.floor(lastUpdate.getTime() / 1000)}:R>\n\n` +
-                `*ℹ️ The image below is a snapshot from the last detected activity, not a live feed.*`
-            );
+          await this.sendEmbedWithoutImage(
+            message,
+            peopleCount,
+            lastPresence ? new Date(lastPresence) : null,
+            lastUpdate,
+          );
         }
+      } catch (err) {
+        this.logger.error(
+          `Failed to update message ${snapshot.messageId}`,
+          err,
+        );
+      }
+    }
+  }
 
-        await message.edit({ content: "", embeds: [embed], files: [{ attachment: imagePath, name: 'camera.jpg' }], });
+  async addChannelToUpdateList(channelId: string) {
+    // Check if exists
+    const existing = await this.database.officeStatusSnapshot.findFirst({
+      where: { channelId },
+    });
+
+    if (existing) {
+      throw new Error('This channel already has a camera widget');
     }
 
-    async updateStatusMessages(peopleCount: number, lastUpdate: Date, image: string | null = null) {
-        const snapshots = await this.database.officeStatusSnapshot.findMany();
+    const channel = await this.client.channels.fetch(channelId);
 
-        if (snapshots.length === 0) return;
+    if (!channel || !channel.isTextBased())
+      throw new Error('Channel does not exist or is not text based');
 
-        for (const snapshot of snapshots) {
-            try {
-                const channel = await this.client.channels.fetch(snapshot.channelId);
-                if (!channel || !channel.isTextBased()) continue;
+    const message = await (channel as TextChannel).send({
+      content: 'This is office camera widget. Awaiting first update...',
+    });
 
-                const message = await this.getOrCreateMessage(channel as TextChannel, snapshot.messageId);
+    await this.database.officeStatusSnapshot.create({
+      data: {
+        channelId,
+        messageId: message.id,
+      },
+    });
+  }
 
-                // Determine last presence
-                let lastPresence = snapshot.lastPresenceDetectedAt;
-                if (peopleCount > 0) {
-                    lastPresence = lastUpdate;
-                }
+  async removeChannelFromUpdateList(channelId: string) {
+    const snapshot = await this.database.officeStatusSnapshot.findFirst({
+      where: { channelId },
+    });
 
-                // Update Database
-                await this.database.officeStatusSnapshot.update({
-                    where: { id: snapshot.id },
-                    data: {
-                        messageId: message.id,
-                        currentPersonCount: peopleCount,
-                        lastMessageUpdatedAt: lastUpdate,
-                        lastPresenceDetectedAt: lastPresence,
-                        imagePath: image ?? snapshot.imagePath,
-                    },
-                });
+    if (!snapshot) throw new Error("This channel doesn't have a camera widget");
 
-                const finalImagePath = image ?? snapshot.imagePath;
+    const channel = await this.client.channels.fetch(channelId);
 
-                if (finalImagePath) {
-                    await this.sendEmbedWithImage(
-                        message,
-                        peopleCount,
-                        lastPresence ? new Date(lastPresence) : lastUpdate, // Safe fallback
-                        finalImagePath,
-                        lastUpdate
-                    );
-                } else {
-                    await this.sendEmbedWithoutImage(
-                        message,
-                        peopleCount,
-                        lastPresence ? new Date(lastPresence) : null,
-                        lastUpdate
-                    );
-                }
-
-            } catch (err) {
-                this.logger.error(`Failed to update message ${snapshot.messageId}`, err);
-            }
-        }
+    if (channel && channel.isTextBased()) {
+      try {
+        const message = await (channel as TextChannel).messages.fetch(
+          snapshot.messageId,
+        );
+        if (message) await message.delete();
+      } catch (e) {
+        this.logger.warn(
+          `Could not delete message for removed widget: ${
+            e instanceof Error ? e.message : String(e)
+          }`,
+        );
+      }
     }
 
-    async addChannelToUpdateList(channelId: string) {
-        // Check if exists
-        const existing = await this.database.officeStatusSnapshot.findFirst({
-            where: { channelId },
-        });
+    await this.database.officeStatusSnapshot.delete({
+      where: { id: snapshot.id },
+    });
+  }
 
-        if (existing) {
-            throw new Error('This channel already has a camera widget');
-        }
+  async toggleDowntimeAlert(userId: string): Promise<boolean> {
+    const alert = await this.database.cameraDowntimeAlert.findFirst({
+      where: { discordUserId: userId },
+    });
 
-        const channel = await this.client.channels.fetch(channelId);
-
-        if (!channel || !channel.isTextBased()) throw new Error('Channel does not exist or is not text based');
-
-        const message = await (channel as TextChannel).send({ content: "This is office camera widget. Awaiting first update..." });
-
-        await this.database.officeStatusSnapshot.create({
-            data: {
-                channelId,
-                messageId: message.id,
-            },
-        });
+    if (alert) {
+      await this.database.cameraDowntimeAlert.delete({
+        where: { id: alert.id },
+      });
+      return false; // Unsubscribed
+    } else {
+      await this.database.cameraDowntimeAlert.create({
+        data: { discordUserId: userId },
+      });
+      return true; // Subscribed
     }
-
-    async removeChannelFromUpdateList(channelId: string) {
-        const snapshot = await this.database.officeStatusSnapshot.findFirst({
-            where: { channelId },
-        });
-
-        if (!snapshot) throw new Error("This channel doesn't have a camera widget");
-
-        const channel = await this.client.channels.fetch(channelId);
-
-        if (channel && channel.isTextBased()) {
-            try {
-                const message = await (channel as TextChannel).messages.fetch(snapshot.messageId);
-                if (message) await message.delete();
-            } catch (e) {
-                this.logger.warn(`Could not delete message for removed widget: ${e.message}`);
-            }
-        }
-
-        await this.database.officeStatusSnapshot.delete({
-            where: { id: snapshot.id },
-        });
-    }
-
-    async toggleDowntimeAlert(userId: string): Promise<boolean> {
-        const alert = await this.database.cameraDowntimeAlert.findFirst({
-            where: { discordUserId: userId },
-        });
-
-        if (alert) {
-            await this.database.cameraDowntimeAlert.delete({
-                where: { id: alert.id },
-            });
-            return false; // Unsubscribed
-        } else {
-            await this.database.cameraDowntimeAlert.create({
-                data: { discordUserId: userId },
-            });
-            return true; // Subscribed
-        }
-    }
+  }
 }

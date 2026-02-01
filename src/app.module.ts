@@ -14,29 +14,34 @@ import { envValidationSchema } from './config/env.validation';
 import { OfficeCameraModule } from './office-camera/office-camera.module';
 
 @Module({
-    imports: [
-        ConfigModule.forRoot({
-            isGlobal: true,
-            envFilePath: '.env',
-            validationSchema: envValidationSchema,
-        }),
-        NecordModule.forRootAsync({
-            useFactory: (configService) => ({
-                token: configService.get('DISCORD_TOKEN'),
-                intents: [IntentsBitField.Flags.Guilds, IntentsBitField.Flags.GuildMessages, IntentsBitField.Flags.GuildMembers, IntentsBitField.Flags.GuildVoiceStates],
-                development: [configService.get('DISCORD_GUILD_ID')]
-            }),
-            inject: [ConfigService],
-        }),
-        DatabaseModule,
-        RecordingsModule,
-        MeetingsModule,
-        GoogleModule,
-        ActivityModule,
-        GithubModule,
-        OfficeCameraModule
-    ],
-    controllers: [AppController],
-    providers: [AppService],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+      validationSchema: envValidationSchema,
+    }),
+    NecordModule.forRootAsync({
+      useFactory: (configService: ConfigService) => ({
+        token: configService.get('DISCORD_TOKEN'),
+        intents: [
+          IntentsBitField.Flags.Guilds,
+          IntentsBitField.Flags.GuildMessages,
+          IntentsBitField.Flags.GuildMembers,
+          IntentsBitField.Flags.GuildVoiceStates,
+        ],
+        development: [configService.get('DISCORD_GUILD_ID')],
+      }),
+      inject: [ConfigService],
+    }),
+    DatabaseModule,
+    RecordingsModule,
+    MeetingsModule,
+    GoogleModule,
+    ActivityModule,
+    GithubModule,
+    OfficeCameraModule,
+  ],
+  controllers: [AppController],
+  providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}
