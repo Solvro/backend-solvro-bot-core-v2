@@ -92,6 +92,7 @@ model Meeting {
     meetingType      MeetingType     @default(Other)
 
     fullTranscription String? @db.Text
+    summary           String? @db.Text
 
     driveFolderId     String?
     isUploadedToDrive Boolean   @default(false)
