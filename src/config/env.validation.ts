@@ -13,4 +13,5 @@ export const envValidationSchema = Joi.object({
   GOOGLE_DRIVE_FOLDER_ID: Joi.string().required(),
   TRANSCRIBER_URL: Joi.string().uri().required(),
   GITHUB_WEBHOOK_SECRET: Joi.string().required(),
+  OFFICE_CAMERA_IMAGE_PATH: Joi.string().default('./uploads/office-camera'),
 });

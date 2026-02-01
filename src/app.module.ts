@@ -11,6 +11,7 @@ import { ActivityModule } from './discord/activity/activity.module';
 import { GoogleModule } from './google/google.module';
 import { GithubModule } from './core/github/github.module';
 import { envValidationSchema } from './config/env.validation';
+import { OfficeCameraModule } from './office-camera/office-camera.module';
 
 @Module({
     imports: [
@@ -32,7 +33,8 @@ import { envValidationSchema } from './config/env.validation';
         MeetingsModule,
         GoogleModule,
         ActivityModule,
-        GithubModule
+        GithubModule,
+        OfficeCameraModule
     ],
     controllers: [AppController],
     providers: [AppService],
