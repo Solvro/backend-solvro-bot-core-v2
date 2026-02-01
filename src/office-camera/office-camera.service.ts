@@ -9,21 +9,24 @@ export class OfficeCameraService {
 
     constructor(
         private readonly database: DatabaseService,
-        private readonly client: Client,
-        private readonly configService: ConfigService,
+        private readonly client: Client
     ) { }
 
     private async getOrCreateMessage(channel: TextChannel, messageId: string) {
         try {
             return await channel.messages.fetch(messageId);
-        } catch {
+        } catch (error) {
+            this.logger.error(
+                'Failed to fetch existing office camera message. Creating a new one.',
+                error instanceof Error ? error.stack : String(error),
+            );
             return await channel.send({ content: "This is office camera widget. Awaiting first update..." });
         }
     }
 
     async sendEmbedWithoutImage(message: Message, peopleCount: number, lastPresence: Date | null, lastUpdate: Date) {
         const isOccupied = peopleCount > 0;
-        const presence = lastPresence == null ? "-" : `<t:${Math.floor(lastPresence.getTime() / 1000)}:R>`;
+        const presence = lastPresence === null ? "-" : `<t:${Math.floor(lastPresence.getTime() / 1000)}:R>`;
 
         const embed = new EmbedBuilder()
             .setTitle(isOccupied ? '🟢 Office Activity Detected' : '💤 Office is currently empty')

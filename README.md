@@ -64,6 +64,9 @@ npm install
 
     *   **GitHub Integration**:
         *   `GITHUB_WEBHOOK_SECRET`: Secret used to verify GitHub webhooks.
+        
+    *   **Office Camera**:
+        *   `OFFICE_CAMERA_IMAGE_PATH`: (Optional) Directory where office camera images are stored (default: `./uploads/office-camera`).
 
 ### 4. Database Setup (Prisma)
 
