@@ -9,7 +9,10 @@ import { MessageFlags } from 'discord.js';
 export class AppService {
   private readonly logger = new Logger(AppService.name);
 
-  constructor(private database: DatabaseService, private guildConfig: GuildConfigService) { }
+  constructor(
+    private database: DatabaseService,
+    private guildConfig: GuildConfigService,
+  ) {}
 
   getHello(): string {
     return 'Hello World!';
@@ -22,7 +25,10 @@ export class AppService {
   public async onPing(
     @necord.Context() [interaction]: necord.SlashCommandContext,
   ) {
-    return interaction.reply({ content: 'Pong!', flags: MessageFlags.Ephemeral });
+    return interaction.reply({
+      content: 'Pong!',
+      flags: MessageFlags.Ephemeral,
+    });
   }
 
   @necord.Once('clientReady')
@@ -126,12 +132,16 @@ export class AppService {
   }
 
   @necord.On('guildMemberAdd')
-  public async onGuildMemberAdd(@necord.Context() [member]: necord.ContextOf<'guildMemberAdd'>,) {
+  public async onGuildMemberAdd(
+    @necord.Context() [member]: necord.ContextOf<'guildMemberAdd'>,
+  ) {
     const config = await this.guildConfig.get(member.guild.id);
 
     if (config?.autoRoleId) {
-      await member.roles.add(config.autoRoleId).catch((err) => {
-        this.logger.error(`Failed to assign auto role to member ${member.id} in guild ${member.guild.id}: ${err.message}`);
+      await member.roles.add(config.autoRoleId).catch((err: Error) => {
+        this.logger.error(
+          `Failed to assign auto role to member ${member.id} in guild ${member.guild.id}: ${err.message}`,
+        );
       });
     }
   }

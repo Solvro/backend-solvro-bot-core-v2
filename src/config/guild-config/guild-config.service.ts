@@ -6,7 +6,7 @@ import { DatabaseService } from 'src/database/database.service';
 export class GuildConfigService implements OnModuleInit {
   private configCache = new Map<string, GuildConfig>();
 
-  constructor(private readonly database: DatabaseService) { }
+  constructor(private readonly database: DatabaseService) {}
 
   async onModuleInit() {
     await this.loadGuildConfigs();
@@ -14,7 +14,7 @@ export class GuildConfigService implements OnModuleInit {
 
   async loadGuildConfigs() {
     const configs = await this.database.guildConfig.findMany();
-    configs.forEach(c => this.configCache.set(c.guildId, c));
+    configs.forEach((c) => this.configCache.set(c.guildId, c));
   }
 
   async get(guildId: string): Promise<GuildConfig | null | undefined> {
