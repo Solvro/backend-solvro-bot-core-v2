@@ -14,7 +14,6 @@ import { envValidationSchema } from './config/env.validation';
 import { OfficeCameraModule } from './office-camera/office-camera.module';
 import { GuildConfigModule } from './config/guild-config/guild-config.module';
 import { AdminModule } from './discord/admin/admin.module';
-import { GuildConfigService } from './config/guild-config/guild-config.service';
 
 @Module({
   imports: [
@@ -47,6 +46,6 @@ import { GuildConfigService } from './config/guild-config/guild-config.service';
     AdminModule,
   ],
   controllers: [AppController],
-  providers: [AppService, GuildConfigService],
+  providers: [AppService],
 })
 export class AppModule {}

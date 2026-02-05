@@ -8,7 +8,7 @@ import {
   type SlashCommandContext,
   Options,
 } from 'necord';
-import { MessageFlags } from 'discord.js';
+import { MessageFlags, PermissionFlagsBits } from 'discord.js';
 
 @Injectable()
 export class AdminCommands {
@@ -20,6 +20,7 @@ export class AdminCommands {
   @SlashCommand({
     name: 'set-autorole',
     description: 'Set the automatic role assigned to new members',
+    defaultMemberPermissions: PermissionFlagsBits.Administrator,
   })
   public async setAutoRole(
     @Context() [interaction]: SlashCommandContext,

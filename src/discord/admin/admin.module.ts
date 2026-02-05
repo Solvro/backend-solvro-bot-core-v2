@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { AdminCommands } from './admin.commands';
-import { GuildConfigService } from 'src/config/guild-config/guild-config.service';
+import { GuildConfigModule } from 'src/config/guild-config/guild-config.module';
 
 @Module({
-  providers: [AdminService, AdminCommands, GuildConfigService],
+  providers: [AdminService, AdminCommands],
+  imports: [GuildConfigModule],
 })
 export class AdminModule {}
