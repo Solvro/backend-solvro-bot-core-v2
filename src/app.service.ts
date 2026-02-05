@@ -2,12 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as necord from 'necord';
 import { DatabaseService } from './database/database.service';
 import { AttendanceState } from 'generated/prisma/enums';
+import { GuildConfigService } from './config/guild-config/guild-config.service';
 
 @Injectable()
 export class AppService {
   private readonly logger = new Logger(AppService.name);
 
-  constructor(private database: DatabaseService) {}
+  constructor(private database: DatabaseService, private guildConfig: GuildConfigService) { }
 
   getHello(): string {
     return 'Hello World!';
@@ -121,5 +122,16 @@ export class AppService {
         });
       }
     });
+  }
+
+  @necord.On('guildMemberAdd')
+  public async onGuildMemberAdd(@necord.Context() [member]: necord.ContextOf<'guildMemberAdd'>,) {
+    const config = await this.guildConfig.get(member.guild.id);
+
+    if (config?.autoRoleId) {
+      await member.roles.add(config.autoRoleId).catch((err) => {
+        this.logger.error(`Failed to assign auto role to member ${member.id} in guild ${member.guild.id}: ${err.message}`);
+      });
+    }
   }
 }
