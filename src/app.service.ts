@@ -3,6 +3,7 @@ import * as necord from 'necord';
 import { DatabaseService } from './database/database.service';
 import { AttendanceState } from 'generated/prisma/enums';
 import { GuildConfigService } from './config/guild-config/guild-config.service';
+import { MessageFlags } from 'discord.js';
 
 @Injectable()
 export class AppService {
@@ -21,7 +22,7 @@ export class AppService {
   public async onPing(
     @necord.Context() [interaction]: necord.SlashCommandContext,
   ) {
-    return interaction.reply({ content: 'Pong!' });
+    return interaction.reply({ content: 'Pong!', flags: MessageFlags.Ephemeral });
   }
 
   @necord.Once('clientReady')
