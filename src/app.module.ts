@@ -12,6 +12,8 @@ import { GoogleModule } from './google/google.module';
 import { GithubModule } from './core/github/github.module';
 import { envValidationSchema } from './config/env.validation';
 import { OfficeCameraModule } from './office-camera/office-camera.module';
+import { GuildConfigModule } from './config/guild-config/guild-config.module';
+import { AdminModule } from './discord/admin/admin.module';
 
 @Module({
   imports: [
@@ -40,6 +42,8 @@ import { OfficeCameraModule } from './office-camera/office-camera.module';
     ActivityModule,
     GithubModule,
     OfficeCameraModule,
+    GuildConfigModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],
