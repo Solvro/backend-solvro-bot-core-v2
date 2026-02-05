@@ -1,6 +1,6 @@
-import { IsString } from "class-validator";
+import { IsString } from 'class-validator';
 
 export class MeetingSummaryDTO {
-    @IsString()
-    summary: string;
+  @IsString()
+  summary: string;
 }

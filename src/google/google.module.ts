@@ -7,13 +7,7 @@ import { GoogleController } from './google.controller';
 @Module({
   imports: [ConfigModule],
   controllers: [GoogleController],
-  providers: [
-    GoogleAuthService,
-    GoogleDriveService
-  ],
-  exports: [
-    GoogleAuthService,
-    GoogleDriveService,
-  ],
+  providers: [GoogleAuthService, GoogleDriveService],
+  exports: [GoogleAuthService, GoogleDriveService],
 })
 export class GoogleModule {}

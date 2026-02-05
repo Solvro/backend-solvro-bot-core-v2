@@ -15,9 +15,10 @@ export class GoogleController {
   @Get('callback')
   async callback(@Query('code') code: string) {
     const tokens = await this.googleAuthService.authenticate(code);
-    
+
     return {
-      message: 'Authentication successful! Please save the refresh token in your .env file.',
+      message:
+        'Authentication successful! Please save the refresh token in your .env file.',
       refresh_token: tokens.refresh_token,
       access_token: tokens.access_token,
       expiry_date: tokens.expiry_date,

@@ -6,15 +6,21 @@ import { FindOneParams } from 'src/common/validators/find-one-param';
 
 @Controller('recordings')
 export class RecordingsController {
-    constructor(private readonly recordingsService: RecordingsService) { }
+  constructor(private readonly recordingsService: RecordingsService) {}
 
-    @Patch(':id')
-    updateMeeting(@Param() params: FindOneParams, @Body() updateMeetingDTO: UpdateMeetingDTO) {
-        return this.recordingsService.updateMeeting(+params.id, updateMeetingDTO);
-    }
+  @Patch(':id')
+  updateMeeting(
+    @Param() params: FindOneParams,
+    @Body() updateMeetingDTO: UpdateMeetingDTO,
+  ) {
+    return this.recordingsService.updateMeeting(+params.id, updateMeetingDTO);
+  }
 
-    @Post(':id/summary')
-    saveSummary(@Param() params: FindOneParams, @Body() meetingSummaryDTO: MeetingSummaryDTO) {
-        return this.recordingsService.saveSummary(+params.id, meetingSummaryDTO);
-    }
+  @Post(':id/summary')
+  saveSummary(
+    @Param() params: FindOneParams,
+    @Body() meetingSummaryDTO: MeetingSummaryDTO,
+  ) {
+    return this.recordingsService.saveSummary(+params.id, meetingSummaryDTO);
+  }
 }

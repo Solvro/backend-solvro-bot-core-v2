@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, NotImplementedException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { RecordingState } from 'generated/prisma/enums';
 import { DatabaseService } from 'src/database/database.service';
 import { MeetingSummaryDTO } from './dto/meeting-summary.dto';
@@ -6,10 +6,12 @@ import { UpdateMeetingDTO } from './dto/update-meeting.dto';
 
 @Injectable()
 export class RecordingsService {
-  constructor(private database: DatabaseService) { }
+  constructor(private database: DatabaseService) {}
 
   async updateMeeting(id: number, updateMeetingDTO: UpdateMeetingDTO) {
-    const existingMeeting = await this.database.meeting.findUnique({ where: { id: +id } });
+    const existingMeeting = await this.database.meeting.findUnique({
+      where: { id: +id },
+    });
 
     if (!existingMeeting) throw new NotFoundException('Meeting not found');
 
@@ -21,20 +23,22 @@ export class RecordingsService {
         finishedAt: new Date(),
         transcriptionChunks: {
           create: [
-            ...updateMeetingDTO.segments.map(chunk => ({
+            ...updateMeetingDTO.segments.map((chunk) => ({
               speakerDiscordId: chunk.userId,
               startTime: chunk.start,
               duration: chunk.end - chunk.start,
-              text: chunk.text
-            }))
-          ]
-        }
-      }
+              text: chunk.text,
+            })),
+          ],
+        },
+      },
     });
   }
 
   async saveSummary(meetingId: number, meetingSummaryDTO: MeetingSummaryDTO) {
-    const existingMeeting = await this.database.meeting.findUnique({ where: { id: +meetingId } });
+    const existingMeeting = await this.database.meeting.findUnique({
+      where: { id: +meetingId },
+    });
 
     if (!existingMeeting) throw new NotFoundException('Meeting not found');
 
@@ -44,7 +48,7 @@ export class RecordingsService {
       where: { id: meetingId },
       data: {
         summary: meetingSummaryDTO.summary,
-      }
+      },
     });
   }
 }

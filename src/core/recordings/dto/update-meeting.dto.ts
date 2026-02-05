@@ -1,52 +1,52 @@
 import { IsNumber, IsString } from 'class-validator';
 
 export class UpdateMeetingDTO {
-    @IsString()
-    text: string;
+  @IsString()
+  text: string;
 
-    @IsString()
-    task: string;
+  @IsString()
+  task: string;
 
-    @IsString()
-    language: string;
+  @IsString()
+  language: string;
 
-    @IsNumber()
-    duration: number;
+  @IsNumber()
+  duration: number;
 
-    segments: SegmentDTO[];
+  segments: SegmentDTO[];
 }
 
 export class SegmentDTO {
-    @IsNumber()
-    id: number;
+  @IsNumber()
+  id: number;
 
-    @IsNumber()
-    seek: number;
+  @IsNumber()
+  seek: number;
 
-    @IsNumber()
-    start: number;
+  @IsNumber()
+  start: number;
 
-    @IsNumber()
-    end: number;
+  @IsNumber()
+  end: number;
 
-    @IsString()
-    text: string;
+  @IsString()
+  text: string;
 
-    @IsNumber({}, { each: true })
-    tokens: number[];
+  @IsNumber({}, { each: true })
+  tokens: number[];
 
-    @IsNumber()
-    temperature: number
+  @IsNumber()
+  temperature: number;
 
-    @IsNumber()
-    avg_logprob: number
+  @IsNumber()
+  avg_logprob: number;
 
-    @IsNumber()
-    compression_ratio: number
+  @IsNumber()
+  compression_ratio: number;
 
-    @IsNumber()
-    no_speech_prob: number
+  @IsNumber()
+  no_speech_prob: number;
 
-    @IsString()
-    userId: string
+  @IsString()
+  userId: string;
 }
