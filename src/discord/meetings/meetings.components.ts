@@ -449,4 +449,112 @@ export class MeetingsComponents {
       components: [],
     });
   }
+
+  @necord.Button('BUTTON_TRANSCRIPTION/:meetingId')
+  public async onTranscriptionButtonDynamic(
+    @necord.Context() [interaction]: necord.ButtonContext,
+    @necord.ComponentParam('meetingId') meetingId: string,
+  ) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    const id = parseInt(meetingId, 10);
+    const transcription =
+      await this.filesService.generateMeetingTranscriptFile(id);
+
+    if (!transcription) {
+      await interaction.editReply({
+        content:
+          '❌ No transcription found for this meeting. It might still be processing.',
+      });
+      return;
+    }
+
+    const file = new AttachmentBuilder(Buffer.from(transcription), {
+      name: `meeting-transcription-${id}.md`,
+    });
+
+    await interaction.editReply({
+      content: '**Transcription:**',
+      files: [file],
+    });
+  }
+
+  @necord.Button('BUTTON_ATTENDANCE/:meetingId')
+  public async onAttendanceButtonDynamic(
+    @necord.Context() [interaction]: necord.ButtonContext,
+    @necord.ComponentParam('meetingId') meetingId: string,
+  ) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    const id = parseInt(meetingId, 10);
+    const csvContent =
+      await this.filesService.generateAttendanceFile(id);
+
+    if (!csvContent) {
+      await interaction.editReply({
+        content: '❌ No attendance data found for this meeting.',
+      });
+      return;
+    }
+
+    await interaction.editReply({
+      content: '📋 Attendance Data (CSV):',
+      files: [
+        {
+          attachment: Buffer.from(csvContent, 'utf-8'),
+          name: `attendance_meeting_${id}.csv`,
+        },
+      ],
+    });
+  }
+
+  @necord.Button('BUTTON_SUMMARY/:meetingId')
+  public async onSummaryButtonDynamic(
+    @necord.Context() [interaction]: necord.ButtonContext,
+    @necord.ComponentParam('meetingId') meetingId: string,
+  ) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    const id = parseInt(meetingId, 10);
+    const summary =
+      await this.filesService.generateMeetingSummaryFile(id);
+
+    if (!summary) {
+      await interaction.editReply({
+        content:
+          '❌ No summary found for this meeting. It might still be processing.',
+      });
+      return;
+    }
+
+    if (summary.length <= 2000) {
+      await interaction.editReply({
+        content: `**Summary:**\n\n${summary}`,
+      });
+    } else if (summary.length <= 6000) {
+      const chunks =
+        this.meetingsService.chunkStringRespectingLinesAndWords(summary);
+
+      await interaction.editReply({
+        content: '**Summary (split):**',
+      });
+
+      for (const chunk of chunks) {
+        await interaction.followUp({
+          content: chunk,
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+    } else {
+      const file = new AttachmentBuilder(Buffer.from(summary), {
+        name: `meeting-summary-${id}.md`,
+      });
+
+      await interaction.editReply({
+        content:
+          '**Summary is too long to display here. Download the full summary below:**',
+        files: [file],
+      });
+    }
+  }
 }
