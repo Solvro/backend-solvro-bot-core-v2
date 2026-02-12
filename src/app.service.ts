@@ -3,7 +3,7 @@ import * as necord from 'necord';
 import { DatabaseService } from './database/database.service';
 import { AttendanceState } from 'generated/prisma/enums';
 import { GuildConfigService } from './config/guild-config/guild-config.service';
-import { MessageFlags } from 'discord.js';
+import { EmbedBuilder, MessageFlags } from 'discord.js';
 
 @Injectable()
 export class AppService {
@@ -29,6 +29,71 @@ export class AppService {
       content: 'Pong!',
       flags: MessageFlags.Ephemeral,
     });
+  }
+
+  @necord.SlashCommand({
+    name: 'help',
+    description: 'Displays a list of available commands and their descriptions',
+  })
+  public async onHelp(
+    @necord.Context() [interaction]: necord.SlashCommandContext,
+  ) {
+    const embed = new EmbedBuilder()
+      .setTitle('🤖 Solvro Bot Help')
+      .setDescription(
+        'Here is the list of available commands to help you manage meetings, track activity, and more.',
+      )
+      .setColor('#0099ff')
+      .setThumbnail(interaction.client.user?.displayAvatarURL() || null)
+      .addFields(
+        {
+          name: '📊 Activity',
+          value: [
+            '`/discord_activity` - User stats',
+            '`/github_activity` - GitHub activity',
+            '`/channel_activity` - Top channels',
+          ].join('\n'),
+          inline: true,
+        },
+        {
+          name: '🎙️ Meetings',
+          value: [
+            '`/weekly_control_panel` - Dashboard',
+            '`/weekly_start` - Start meeting',
+            '`/weekly_stop` - Stop meeting',
+          ].join('\n'),
+          inline: true,
+        },
+        {
+          name: '📷 Office',
+          value: [
+            '`/office_widget` - Add widget',
+            '`/office_widget_remove` - Remove',
+            '`/office_down_alert` - Toggle alerts',
+          ].join('\n'),
+          inline: true,
+        },
+        {
+          name: '🛠️ Utility',
+          value: [
+            '`/ping` - Bot status',
+            '`/help` - Show help',
+          ].join('\n'),
+          inline: true,
+        },
+        {
+          name: '🛡️ Admin',
+          value: ['`/set-autorole` - Set auto-role'].join('\n'),
+          inline: true,
+        },
+      )
+      .setFooter({
+        text: 'Solvro Bot • version 2.0',
+        iconURL: interaction.client.user?.displayAvatarURL() || undefined,
+      })
+      .setTimestamp();
+
+    return interaction.reply({ embeds: [embed], ephemeral: true });
   }
 
   @necord.Once('clientReady')

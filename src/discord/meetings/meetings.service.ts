@@ -16,7 +16,7 @@ export class MeetingsService {
   constructor(
     private database: DatabaseService,
     private configService: ConfigService,
-  ) {}
+  ) { }
 
   private async startTranscriber(
     channelId: string,
@@ -111,17 +111,35 @@ export class MeetingsService {
       },
     });
 
-    if (enableTranscription) {
-      // best-effort start transcriber; ignore result for now
-      // TODO: handle transcriber start failure
-      await this.startTranscriber(channel.id, meeting.id, name);
-    }
+    try {
+      if (enableTranscription) {
+        // await transcriber start; if it fails, we must rollback
+        const started = await this.startTranscriber(
+          channel.id,
+          meeting.id,
+          name,
+        );
+        if (!started) {
+          throw new Error('Transcriber service failure');
+        }
+      }
 
-    if (enableAttendance) {
-      await this.startAttendanceMonitoring(meeting.id, channel);
-    }
+      if (enableAttendance) {
+        await this.startAttendanceMonitoring(meeting.id, channel);
+      }
 
-    return meeting;
+      return meeting;
+    } catch (error) {
+      // Rollback: delete the meeting and re-throw
+      this.logger.error(
+        `Failed to start meeting ${meeting.id}, rolling back...`,
+        error,
+      );
+      await this.database.meeting.delete({ where: { id: meeting.id } });
+      throw new Error(
+        'Could not start meeting: Transcriber service is unavailable or failed to start.',
+      );
+    }
   }
 
   public async getActiveMeeting(): Promise<Meeting | null> {
@@ -143,7 +161,12 @@ export class MeetingsService {
     }
 
     if (meeting.recordingStatus === RecordingState.InProgress) {
-      await this.stopTranscriber();
+      const stopped = await this.stopTranscriber();
+      if (!stopped) {
+        this.logger.error(
+          `Failed to stop transcriber for meeting ${meeting.id}`,
+        );
+      }
       await this.database.meeting.update({
         where: { id: meeting.id },
         data: { recordingStatus: RecordingState.AwaitingProcessing },

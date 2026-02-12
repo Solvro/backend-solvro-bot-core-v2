@@ -17,7 +17,7 @@ export class MeetingsCommands {
   constructor(
     private meetingsService: MeetingsService,
     private readonly client: Client,
-  ) {}
+  ) { }
 
   @necord.SlashCommand({
     name: 'weekly_start',
@@ -39,26 +39,72 @@ export class MeetingsCommands {
       return;
     }
 
-    await this.meetingsService.createMeeting({
-      name: options.name,
-      channel: options.channelId,
-      meetingType: MeetingType.Weekly,
-      enableAttendance: true,
-      enableTranscription: true,
-    });
+    try {
+      await this.meetingsService.createMeeting({
+        name: options.name,
+        channel: options.channelId,
+        meetingType: MeetingType.Weekly,
+        enableAttendance: true,
+        enableTranscription: true,
+      });
 
-    await interaction.editReply({
-      content:
-        '✅ Weekly session started successfully:\n- 🎤 Transcription is now active\n- 📋 Attendance tracking is in progress',
-    });
+      await interaction.editReply({
+        content:
+          '✅ Weekly session started successfully:\n- 🎤 Transcription is now active\n- 📋 Attendance tracking is in progress',
+      });
+    } catch (error) {
+      await interaction.editReply({
+        content: `❌ Failed to start weekly session: ${error.message}`,
+      });
+    }
   }
 
   @necord.SlashCommand({
-    name: 'weekly_stop',
+    name: 'other_start',
     description:
-      'Stops the weekly meeting monitoring, recording and attendance tracking',
+      'Creates a generic meeting, starts voice recording and attendance monitoring',
   })
-  public async onWeeklyStop(
+  public async onOtherStart(
+    @necord.Context() [interaction]: necord.SlashCommandContext,
+    @necord.Options() options: WeeklyStartDTO,
+  ) {
+    await interaction.deferReply();
+
+    const activeMeeting = await this.meetingsService.getActiveMeeting();
+    if (activeMeeting) {
+      await interaction.editReply({
+        content:
+          '❌ A meeting is already in progress. Please stop it before starting a new one.',
+      });
+      return;
+    }
+
+    try {
+      await this.meetingsService.createMeeting({
+        name: options.name,
+        channel: options.channelId,
+        meetingType: MeetingType.Other,
+        enableAttendance: true,
+        enableTranscription: true,
+      });
+
+      await interaction.editReply({
+        content:
+          '✅ Session started successfully:\n- 🎤 Transcription is now active\n- 📋 Attendance tracking is in progress',
+      });
+    } catch (error) {
+      await interaction.editReply({
+        content: `❌ Failed to start session: ${error.message}`,
+      });
+    }
+  }
+
+  @necord.SlashCommand({
+    name: 'meeting_stop',
+    description:
+      'Stops the current meeting (Weekly or Other) monitoring, recording and attendance tracking',
+  })
+  public async onMeetingStop(
     @necord.Context() [interaction]: necord.SlashCommandContext,
   ) {
     await interaction.deferReply();
@@ -75,15 +121,15 @@ export class MeetingsCommands {
 
     await interaction.editReply({
       content:
-        '✅ Weekly session ended successfully:\n- 🎤 Transcription is being processed and will be available shortly\n- 📋 Attendance tracking is complete\n- 💾 Files will be automatically uploaded to Google Drive when the summary is ready\n\nYou can:\n- 📄 View the transcription with `/transcription`\n- 🧠 See the meeting summary with `/meeting_summary`\n- 👥 View attendance with `/show_attendance`\n- 📊 Check upload status with `/upload_status`',
+        '✅ Session ended successfully:\n- 🎤 Transcription is being processed and will be available shortly\n- 📋 Attendance tracking is complete\n- 💾 Files will be automatically uploaded to Google Drive when the summary is ready\n\nYou can:\n- 📄 View the transcription with `/transcription`\n- 🧠 See the meeting summary with `/meeting_summary`\n- 👥 View attendance with `/show_attendance`\n- 📊 Check upload status with `/upload_status`',
     });
   }
 
   @necord.SlashCommand({
-    name: 'weekly_control_panel',
-    description: 'Displays the control panel for managing the weekly meeting',
+    name: 'meeting_control_panel',
+    description: 'Displays the control panel for managing meetings',
   })
-  public async onWeeklyControlPanel(
+  public async onControlPanel(
     @necord.Context() [interaction]: necord.SlashCommandContext,
   ) {
     await interaction.deferReply({ ephemeral: true });
@@ -94,8 +140,12 @@ export class MeetingsCommands {
         .setLabel('Start Weekly Session')
         .setStyle(ButtonStyle.Success),
       new ButtonBuilder()
-        .setCustomId('BUTTON_STOP_WEEKLY')
-        .setLabel('Stop Weekly Session')
+        .setCustomId('BUTTON_START_OTHER')
+        .setLabel('Start Other Session')
+        .setStyle(ButtonStyle.Primary),
+      new ButtonBuilder()
+        .setCustomId('BUTTON_STOP_SESSION')
+        .setLabel('Stop Session')
         .setStyle(ButtonStyle.Danger),
     );
 
@@ -131,19 +181,23 @@ export class MeetingsCommands {
     }
 
     const embed = new EmbedBuilder()
-      .setTitle('🎙️ Weekly Session Control Panel')
-      .setDescription('Manage your weekly sessions with the controls below.')
+      .setTitle('🎙️ Meeting Control Panel')
+      .setDescription('Manage your sessions with the controls below.')
       .setColor('#0099ff')
       .addFields(
         {
-          name: '🟢 Start Session',
-          value:
-            'Starts a new weekly session, including voice recording and attendance tracking.',
+          name: '🟢 Start Weekly',
+          value: 'Starts a standard weekly session.',
+          inline: true,
+        },
+        {
+          name: '🔵 Start Other',
+          value: 'Starts a generic meeting session.',
           inline: true,
         },
         {
           name: '🔴 Stop Session',
-          value: 'Stops the current session and processes the recording.',
+          value: 'Stops the current session and processes data.',
           inline: true,
         },
         { name: '\u200B', value: '\u200B' }, // Spacer
@@ -153,7 +207,7 @@ export class MeetingsCommands {
             'Use the buttons below to access transcription, attendance, and summary features.',
         },
       )
-      .setFooter({ text: 'Solvro Bot • Weekly Sessions' })
+      .setFooter({ text: 'Solvro Bot • Meetings' })
       .setTimestamp();
 
     await (channel as TextChannel).send({
