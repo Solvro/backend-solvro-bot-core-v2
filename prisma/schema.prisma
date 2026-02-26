@@ -193,6 +193,7 @@ model CameraDowntimeAlert {
 model GuildConfig {
   guildId      String   @id
   autoRoleId   String?
+  meetingLogChannelId String?
   // tutaj dodajemy inne pola konfiguracji wedlug potrzeb
   
   updatedAt    DateTime @updatedAt
