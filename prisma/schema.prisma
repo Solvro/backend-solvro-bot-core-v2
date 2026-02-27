@@ -1,200 +1,201 @@
 generator client {
-    provider     = "prisma-client"
-    output       = "../generated/prisma"
-    moduleFormat = "cjs"
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // Enums
 
 enum RecordingState {
-    NotRecorded
-    InProgress
-    AwaitingProcessing
-    Processed
-    Failed
+  NotRecorded
+  InProgress
+  AwaitingProcessing
+  Processed
+  Failed
 }
 
 enum AttendanceState {
-    Idle
-    Monitoring
-    Completed
+  Idle
+  Monitoring
+  Completed
 }
 
 enum MeetingType {
-    Weekly
-    Other
+  Weekly
+  Other
 }
 
 enum MemberStatus {
-    New
-    Active
-    Inactive
+  New
+  Active
+  Inactive
 }
 
 enum GithubActivityType {
-    Commit
-    PullRequest
-    Issue
-    Review
-    Other
+  Commit
+  PullRequest
+  Issue
+  Review
+  Other
 }
 
 // Models
 
 model Member {
-    id           Int     @id @default(autoincrement())
-    firstName    String?
-    lastName     String?
-    email        String? @unique
-    phone        String?
-    studentIndex String?
-    faculty      String?
-    fieldOfStudy String?
-    studyYear    String?
+  id           Int     @id @default(autoincrement())
+  firstName    String?
+  lastName     String?
+  email        String? @unique
+  phone        String?
+  studentIndex String?
+  faculty      String?
+  fieldOfStudy String?
+  studyYear    String?
 
-    currentSection   String?
-    currentRole      String?
-    currentProjects  String?
-    otherProjects    String?
-    otherExperiences String?
-    status           MemberStatus @default(New)
+  currentSection   String?
+  currentRole      String?
+  currentProjects  String?
+  otherProjects    String?
+  otherExperiences String?
+  status           MemberStatus @default(New)
 
-    discordId      String  @unique
-    messengerUrl   String?
-    githubUsername String?
-    githubUrl      String?
-    githubId       String? @unique
+  discordId      String  @unique
+  messengerUrl   String?
+  githubUsername String?
+  githubUrl      String?
+  githubId       String? @unique
 
-    joinedAt  DateTime?
-    createdAt DateTime  @default(now())
-    updatedAt DateTime  @updatedAt
+  joinedAt  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-    meetings        Meeting[]
-    discordActivity DiscordActivity[]
-    githubActivity  GithubActivity[]
+  meetings        Meeting[]
+  discordActivity DiscordActivity[]
+  githubActivity  GithubActivity[]
 
-    @@index([discordId])
-    @@index([githubId])
+  @@index([discordId])
+  @@index([githubId])
 }
 
 model Meeting {
-    id               Int     @id @default(autoincrement())
-    name             String?
-    discordChannelId String?
+  id               Int     @id @default(autoincrement())
+  name             String?
+  discordChannelId String?
 
-    attendanceStatus AttendanceState @default(Idle)
-    recordingStatus  RecordingState?
-    meetingType      MeetingType     @default(Other)
+  attendanceStatus AttendanceState @default(Idle)
+  recordingStatus  RecordingState?
+  meetingType      MeetingType     @default(Other)
 
-    fullTranscription String? @db.Text
-    summary           String? @db.Text
+  fullTranscription String? @db.Text
+  summary           String? @db.Text
 
-    driveFolderId     String?
-    isUploadedToDrive Boolean   @default(false)
-    uploadCompletedAt DateTime?
+  driveFolderId     String?
+  isUploadedToDrive Boolean   @default(false)
+  uploadCompletedAt DateTime?
 
-    finishedAt DateTime?
-    createdAt  DateTime  @default(now())
-    updatedAt  DateTime  @updatedAt
+  finishedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
-    attendees           Member[]
-    transcriptionChunks TranscriptionChunk[]
+  attendees           Member[]
+  transcriptionChunks TranscriptionChunk[]
 }
 
 model TranscriptionChunk {
-    id               Int    @id @default(autoincrement())
-    speakerDiscordId String
-    startTime        Float
-    duration         Float
-    text             String @db.Text
+  id               Int    @id @default(autoincrement())
+  speakerDiscordId String
+  startTime        Float
+  duration         Float
+  text             String @db.Text
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    meetingId Int
-    meeting   Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  meetingId Int
+  meeting   Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
 
-    @@index([meetingId])
+  @@index([meetingId])
 }
 
 model DiscordActivity {
-    id           Int      @id @default(autoincrement())
-    messageCount Int
-    date         DateTime @db.Date
+  id           Int      @id @default(autoincrement())
+  messageCount Int
+  date         DateTime @db.Date
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    memberId Int
-    member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId Int
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
-    @@index([memberId])
-    @@index([date])
+  @@index([memberId])
+  @@index([date])
 }
 
 model GithubActivity {
-    id       Int                @id @default(autoincrement())
-    githubId String?
-    type     GithubActivityType
-    repo     String
-    message  String?
-    date     DateTime
+  id       Int                @id @default(autoincrement())
+  githubId String?
+  type     GithubActivityType
+  repo     String
+  message  String?
+  date     DateTime
 
-    externalId String?
+  externalId String?
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    member Member? @relation(fields: [githubId], references: [githubId], onDelete: Cascade)
+  member Member? @relation(fields: [githubId], references: [githubId], onDelete: Cascade)
 
-    @@index([date])
-    @@unique([externalId, type])
+  @@unique([externalId, type])
+  @@index([date])
 }
 
 model ChannelActivity {
-    id           Int      @id @default(autoincrement())
-    channelId    String
-    messageCount Int
-    date         DateTime @db.Date
-    createdAt    DateTime @default(now())
-    updatedAt    DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  channelId    String
+  messageCount Int
+  date         DateTime @db.Date
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-    @@index([channelId])
-    @@index([date])
+  @@index([channelId])
+  @@index([date])
 }
 
 model OfficeStatusSnapshot {
-    id        Int    @id @default(autoincrement())
-    channelId String
-    messageId String
+  id        Int    @id @default(autoincrement())
+  channelId String
+  messageId String
 
-    currentPersonCount     Int?
-    lastPresenceDetectedAt DateTime?
-    lastMessageUpdatedAt   DateTime?
-    imagePath              String?
+  currentPersonCount     Int?
+  lastPresenceDetectedAt DateTime?
+  lastMessageUpdatedAt   DateTime?
+  imagePath              String?
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model CameraDowntimeAlert {
-    id                Int       @id @default(autoincrement())
-    discordUserId     String
-    lastMessageSentAt DateTime?
-    createdAt         DateTime  @default(now())
-    updatedAt         DateTime  @updatedAt
+  id                Int       @id @default(autoincrement())
+  discordUserId     String
+  lastMessageSentAt DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 }
 
 model GuildConfig {
   guildId      String   @id
   autoRoleId   String?
   meetingLogChannelId String?
+
   // tutaj dodajemy inne pola konfiguracji wedlug potrzeb
-  
-  updatedAt    DateTime @updatedAt
+
+  updatedAt DateTime @updatedAt
 }
