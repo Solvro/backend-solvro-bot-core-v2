@@ -8,6 +8,7 @@ import {
   StringSelectMenuBuilder,
   TextInputBuilder,
   TextInputStyle,
+  ButtonInteraction,
 } from 'discord.js';
 import { MeetingsService } from './meetings.service';
 import { MeetingType } from 'generated/prisma/enums';
@@ -19,7 +20,7 @@ export class MeetingsComponents {
   constructor(
     private meetingsService: MeetingsService,
     private filesService: FilesService,
-  ) {}
+  ) { }
 
   @necord.Button('BUTTON_START_WEEKLY')
   public async onStartWeeklyButton(
@@ -65,6 +66,50 @@ export class MeetingsComponents {
     await interaction.showModal(modal);
   }
 
+  @necord.Button('BUTTON_START_OTHER')
+  public async onStartOtherButton(
+    @necord.Context() [interaction]: necord.ButtonContext,
+  ) {
+    const activeMeeting = await this.meetingsService.getActiveMeeting();
+    if (activeMeeting) {
+      await interaction.reply({
+        content:
+          '❌ A meeting is already in progress. Please stop it before starting a new one.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    const member = interaction.member as GuildMember;
+    const channel = member.voice.channel;
+
+    if (!channel) {
+      await interaction.reply({
+        content: '❌ You must be in a voice channel to start a meeting.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    const modal = new ModalBuilder()
+      .setCustomId('MODAL_START_OTHER')
+      .setTitle(`Start Session in ${channel.name}`);
+
+    const nameInput = new TextInputBuilder()
+      .setCustomId('meetingName')
+      .setLabel('Meeting Name')
+      .setStyle(TextInputStyle.Short)
+      .setValue(`Meeting ${new Date().toLocaleDateString()}`)
+      .setRequired(true);
+
+    const firstActionRow =
+      new ActionRowBuilder<TextInputBuilder>().addComponents(nameInput);
+
+    modal.addComponents(firstActionRow);
+
+    await interaction.showModal(modal);
+  }
+
   @necord.Modal('MODAL_START_WEEKLY')
   public async onStartWeeklyModal(
     @necord.Context() [interaction]: necord.ModalContext,
@@ -91,23 +136,85 @@ export class MeetingsComponents {
       return;
     }
 
-    await this.meetingsService.createMeeting({
-      name: name,
-      channel: channel,
-      meetingType: MeetingType.Weekly,
-      enableAttendance: true,
-      enableTranscription: true,
-    });
+    try {
+      await this.meetingsService.createMeeting({
+        name: name,
+        channel: channel,
+        meetingType: MeetingType.Weekly,
+        enableAttendance: true,
+        enableTranscription: true,
+      });
 
-    await interaction.editReply({
-      content: `✅ Weekly session **${name}** started successfully in **${channel.name}**:\n- 🎤 Transcription is now active\n- 📋 Attendance tracking is in progress`,
-    });
+      await interaction.editReply({
+        content: `✅ Weekly session **${name}** started successfully in **${channel.name}**:\n- 🎤 Transcription is now active\n- 📋 Attendance tracking is in progress`,
+      });
+    } catch (error) {
+      await interaction.editReply({
+        content: `❌ Failed to start weekly session: ${error.message}`,
+      });
+    }
+  }
+
+  @necord.Modal('MODAL_START_OTHER')
+  public async onStartOtherModal(
+    @necord.Context() [interaction]: necord.ModalContext,
+  ) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    const name = interaction.fields.getTextInputValue('meetingName');
+    const member = interaction.member as GuildMember;
+    const channel = member.voice.channel;
+
+    if (!channel) {
+      await interaction.editReply({
+        content: '❌ You must be in a voice channel to start a meeting.',
+      });
+      return;
+    }
+
+    // Double check race condition
+    const activeMeeting = await this.meetingsService.getActiveMeeting();
+    if (activeMeeting) {
+      await interaction.editReply({
+        content: '❌ A meeting is already in progress.',
+      });
+      return;
+    }
+
+    try {
+      await this.meetingsService.createMeeting({
+        name: name,
+        channel: channel,
+        meetingType: MeetingType.Other,
+        enableAttendance: true,
+        enableTranscription: true,
+      });
+
+      await interaction.editReply({
+        content: `✅ Session **${name}** started successfully in **${channel.name}**:\n- 🎤 Transcription is now active\n- 📋 Attendance tracking is in progress`,
+      });
+    } catch (error) {
+      await interaction.editReply({
+        content: `❌ Failed to start session: ${error.message}`,
+      });
+    }
   }
 
   @necord.Button('BUTTON_STOP_WEEKLY')
   public async onStopWeeklyButton(
     @necord.Context() [interaction]: necord.ButtonContext,
   ) {
+    return this.handleStopSession(interaction);
+  }
+
+  @necord.Button('BUTTON_STOP_SESSION')
+  public async onStopSessionButton(
+    @necord.Context() [interaction]: necord.ButtonContext,
+  ) {
+    return this.handleStopSession(interaction);
+  }
+
+  private async handleStopSession(interaction: ButtonInteraction) {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const activeMeeting = await this.meetingsService.getActiveMeeting();
@@ -122,7 +229,7 @@ export class MeetingsComponents {
 
     await interaction.editReply({
       content:
-        '✅ Weekly session ended successfully:\n- 🎤 Transcription is being processed and will be available shortly\n- 📋 Attendance tracking is complete\n- 💾 Files will be automatically uploaded to Google Drive when the summary is ready',
+        '✅ Session ended successfully:\n- 🎤 Transcription is being processed and will be available shortly\n- 📋 Attendance tracking is complete\n- 💾 Files will be automatically uploaded to Google Drive when the summary is ready',
     });
   }
 
@@ -341,5 +448,113 @@ export class MeetingsComponents {
       files: [file],
       components: [],
     });
+  }
+
+  @necord.Button('BUTTON_TRANSCRIPTION/:meetingId')
+  public async onTranscriptionButtonDynamic(
+    @necord.Context() [interaction]: necord.ButtonContext,
+    @necord.ComponentParam('meetingId') meetingId: string,
+  ) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    const id = parseInt(meetingId, 10);
+    const transcription =
+      await this.filesService.generateMeetingTranscriptFile(id);
+
+    if (!transcription) {
+      await interaction.editReply({
+        content:
+          '❌ No transcription found for this meeting. It might still be processing.',
+      });
+      return;
+    }
+
+    const file = new AttachmentBuilder(Buffer.from(transcription), {
+      name: `meeting-transcription-${id}.md`,
+    });
+
+    await interaction.editReply({
+      content: '**Transcription:**',
+      files: [file],
+    });
+  }
+
+  @necord.Button('BUTTON_ATTENDANCE/:meetingId')
+  public async onAttendanceButtonDynamic(
+    @necord.Context() [interaction]: necord.ButtonContext,
+    @necord.ComponentParam('meetingId') meetingId: string,
+  ) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    const id = parseInt(meetingId, 10);
+    const csvContent =
+      await this.filesService.generateAttendanceFile(id);
+
+    if (!csvContent) {
+      await interaction.editReply({
+        content: '❌ No attendance data found for this meeting.',
+      });
+      return;
+    }
+
+    await interaction.editReply({
+      content: '📋 Attendance Data (CSV):',
+      files: [
+        {
+          attachment: Buffer.from(csvContent, 'utf-8'),
+          name: `attendance_meeting_${id}.csv`,
+        },
+      ],
+    });
+  }
+
+  @necord.Button('BUTTON_SUMMARY/:meetingId')
+  public async onSummaryButtonDynamic(
+    @necord.Context() [interaction]: necord.ButtonContext,
+    @necord.ComponentParam('meetingId') meetingId: string,
+  ) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    const id = parseInt(meetingId, 10);
+    const summary =
+      await this.filesService.generateMeetingSummaryFile(id);
+
+    if (!summary) {
+      await interaction.editReply({
+        content:
+          '❌ No summary found for this meeting. It might still be processing.',
+      });
+      return;
+    }
+
+    if (summary.length <= 2000) {
+      await interaction.editReply({
+        content: `**Summary:**\n\n${summary}`,
+      });
+    } else if (summary.length <= 6000) {
+      const chunks =
+        this.meetingsService.chunkStringRespectingLinesAndWords(summary);
+
+      await interaction.editReply({
+        content: '**Summary (split):**',
+      });
+
+      for (const chunk of chunks) {
+        await interaction.followUp({
+          content: chunk,
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+    } else {
+      const file = new AttachmentBuilder(Buffer.from(summary), {
+        name: `meeting-summary-${id}.md`,
+      });
+
+      await interaction.editReply({
+        content:
+          '**Summary is too long to display here. Download the full summary below:**',
+        files: [file],
+      });
+    }
   }
 }
