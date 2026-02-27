@@ -1,19 +1,20 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { IntentsBitField } from 'discord.js';
+import { NecordModule } from 'necord';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { NecordModule } from 'necord';
-import { IntentsBitField } from 'discord.js';
+import { envValidationSchema } from './config/env.validation';
+import { GuildConfigModule } from './config/guild-config/guild-config.module';
+import { GithubModule } from './core/github/github.module';
 import { RecordingsModule } from './core/recordings/recordings.module';
 import { DatabaseModule } from './database/database.module';
-import { MeetingsModule } from './discord/meetings/meetings.module';
 import { ActivityModule } from './discord/activity/activity.module';
-import { GoogleModule } from './google/google.module';
-import { GithubModule } from './core/github/github.module';
-import { envValidationSchema } from './config/env.validation';
-import { OfficeCameraModule } from './office-camera/office-camera.module';
-import { GuildConfigModule } from './config/guild-config/guild-config.module';
 import { AdminModule } from './discord/admin/admin.module';
+import { CalendarModule } from './discord/calendar/calendar.module';
+import { MeetingsModule } from './discord/meetings/meetings.module';
+import { GoogleModule } from './google/google.module';
+import { OfficeCameraModule } from './office-camera/office-camera.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { AdminModule } from './discord/admin/admin.module';
     OfficeCameraModule,
     GuildConfigModule,
     AdminModule,
+    CalendarModule,
   ],
   controllers: [AppController],
   providers: [AppService],
